@@ -113,6 +113,16 @@
    "nb": 57
   },
   {
+   "id": "sira-ramadan-1441",
+   "theme": "sira",
+   "nom": "La biographie du Prophète ﷺ (Ramadan 1441)",
+   "livre": "",
+   "auteur": "",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 27
+  },
+  {
    "id": "sira-qr",
    "theme": "sira",
    "nom": "La biographie du Prophète ﷺ en questions-réponses",
@@ -120,7 +130,7 @@
    "auteur": "",
    "type": "cours",
    "statut": "terminée",
-   "nb": 39
+   "nb": 12
   },
   {
    "id": "decouverte-messager",
@@ -273,6 +283,16 @@
    "nb": 11
   },
   {
+   "id": "bonne-pensee",
+   "theme": "tazkiya",
+   "nom": "Garder une bonne pensée d'Allah",
+   "livre": "حسن الظن بالله",
+   "auteur": "Ibn abi Dounya",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 10
+  },
+  {
    "id": "hommage-savoir",
    "theme": "manhaj",
    "nom": "Hommage au savoir",
@@ -310,7 +330,7 @@
    "auteur": "",
    "type": "preche",
    "statut": "en cours",
-   "nb": 132
+   "nb": 133
   },
   {
    "id": "reponses-messager",
@@ -380,7 +400,7 @@
    "auteur": "",
    "type": "preche",
    "statut": "terminée",
-   "nb": 6
+   "nb": 7
   },
   {
    "id": "merites-piete",
@@ -410,7 +430,7 @@
    "auteur": "",
    "type": "preche",
    "statut": "terminée",
-   "nb": 47
+   "nb": 21
   },
   {
    "id": "khotbas-aid",
@@ -430,7 +450,7 @@
    "auteur": "",
    "type": "conference",
    "statut": "terminée",
-   "nb": 143
+   "nb": 24
   }
  ]
 }

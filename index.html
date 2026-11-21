@@ -202,7 +202,7 @@ function programmeReel(){
   const parJour = new Map();
   D.series.filter(s => s.statut === "en cours").forEach(s => {
     const dates = (D.bySerie.get(s.id) || []).filter(e => e.date).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
-    if(dates.length < 3) return;
+    if(!dates.length) return;
     const compte = {}; dates.forEach(e => { const j = new Date(e.date + "T12:00:00").getDay(); compte[j] = (compte[j] || 0) + 1; });
     const [jour, n] = Object.entries(compte).sort((a, b) => b[1] - a[1])[0];
     if(n < dates.length / 2) return;

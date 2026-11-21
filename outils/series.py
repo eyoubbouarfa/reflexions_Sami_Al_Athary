@@ -27,6 +27,7 @@ SERIES = [
     S("TJ", "tajrid", "hadith", "Le résumé du Sahih d'al Boukhary", "التجريد الصريح لأحاديث الجامع الصحيح", "Az-Zoubaydi", statut="en cours", motifs=["tajrid", "resume du sahih"]),
     S("SJ", "sahih-jami", "hadith", "Lecture de Sahih al Jami'", "صحيح الجامع الصغير", "Sheykh al Albâny", statut="en cours", motifs=["sahih al jami"]),
     S("MW", "muwatta", "fiqh", "Lecture et étude du Muwatta", "الموطأ", "L'imam Malik ibn Anas", statut="en cours", motifs=["muwatta"]),
+    S("SR", "sira-ramadan-1441", "sira", "La biographie du Prophète ﷺ (Ramadan 1441)", "", "", motifs=["ramadan 1441/2020"]),
     S("SQ", "sira-qr", "sira", "La biographie du Prophète ﷺ en questions-réponses", "أمالي في السيرة النبوية", "", motifs=["biographie du prophete", "questions reponses"]),
     S("DM", "decouverte-messager", "sira", "À la découverte du Messager d'Allah ﷺ", "", "", statut="en cours", motifs=["decouverte du messager"]),
     # Cours de semaine terminés
@@ -44,11 +45,12 @@ SERIES = [
     S("DS", "divergences-savants", "manhaj", "Les divergences entre les savants", "", "Sheykh ibn Otheymine", motifs=["divergences entre les savants"]),
     S("UM", "union-musulmans", "manhaj", "L'union des musulmans", "", "Sheykh al Islam ibn Taymiyyah", motifs=["union des musulmans"]),
     S("UF", "union-foi", "manhaj", "L'union fait la foi", "", "Sheykh abd Rahman ibn Nasir as-Saady", motifs=["union fait la foi"]),
+    S("GP", "bonne-pensee", "tazkiya", "Garder une bonne pensée d'Allah", "حسن الظن بالله", "Ibn abi Dounya", motifs=["bonne pensee d'allah"]),
     S("HS", "hommage-savoir", "manhaj", "Hommage au savoir", "تعظيم العلم", "Sheykh Salih al Oseymi", motifs=["hommage au savoir"]),
     S("RB", "30-lecons-ramadan", "ramadan", "30 leçons pour le mois de Ramadan", "", "Sheykh abd Razzâq al Badr", motifs=["30 lecons pour le mois de ramadan"]),
     S("IB", "fatwas-ibn-baz-jeune", "ramadan", "Les avis juridiques de Sheykh ibn Bâz sur le jeûne", "", "Sheykh abd al Aziz ibn Bâz", motifs=["avis juridiques de sheykh ibn baz"]),
     # Prêches du vendredi
-    S("SV", "compagnons", "preches", "Les Compagnons du Messager d'Allah ﷺ", "", "", "preche", "en cours", motifs=["le merite de", "merite des compagnons"]),
+    S("SV", "compagnons", "preches", "Les Compagnons du Messager d'Allah ﷺ", "", "", "preche", "en cours", motifs=["le merite de", "le merite d'", "le merite d’", "merite des compagnons"]),
     S("RM", "reponses-messager", "preches", "Les réponses du Messager d'Allah ﷺ", "", "", "preche", motifs=["reponses du messager"]),
     S("PM", "pedagogie-messager", "preches", "La pédagogie du Messager d'Allah ﷺ", "", "", "preche", motifs=["pedagogie du messager"]),
     S("SC", "specificites", "preches", "Les spécificités du Messager ﷺ et de sa communauté", "", "", "preche", motifs=["specificites"]),

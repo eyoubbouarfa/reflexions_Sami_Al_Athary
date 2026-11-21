@@ -102,11 +102,16 @@ def episode_depuis_post(x):
         url = f"https://t.me/{CANAL}/{x['id']}"
     if not url or not texte:
         return None
+    texte = re.sub(r"\s*par Cours religieux( sur #?SoundCloud)?", "", texte, flags=re.I)
+    texte = re.sub(r"^\s*(Écoutez|Ecoutez)\s+", "", texte)
     lignes = [re.sub(r"^[\s🎧🔊🎙️▶️•\-–]*(écouter|ecouter)\s*:?\s*", "", LIEN_AUDIO.sub("", l), flags=re.I).strip(" :-–")
               for l in texte.splitlines()]
     lignes = [l for l in lignes if l]
     numerotees = [l for l in lignes if re.match(r"^\d{1,4}\b", l)]
     titre = (numerotees or lignes or [""])[0]
+    if not titre or re.match(r"^(Vidéo|Video|Document|Photo|Audio) de ", titre) or re.match(r"^[#\W]", titre[0]) \
+            or titre.lower().startswith("retrouvez sur cette playlist"):
+        return None  # annonces, rappels écrits, médias sans titre : pas des cours
     s = serie_de(titre) or CF
     num, sous, fin = decouper(titre, s) if s is not CF else (None, titre, False)
     if "goo.gl" in url:
@@ -150,6 +155,7 @@ def main():
     connus = {(e["serie"], e["num"]) for e in eps.values() if e["num"] is not None}
     for p in pistes_soundcloud():
         titre, url = (p.get("title") or "").strip(), (p.get("url") or "").split("?")[0]
+        titre = re.sub(r"\s*par Cours religieux.*$", "", titre, flags=re.I)
         if not titre or not url:
             continue
         s = serie_de(titre)
