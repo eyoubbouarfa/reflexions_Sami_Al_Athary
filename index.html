@@ -588,7 +588,7 @@ async function essayerCode(texte){
   try{
     const r = await fetch(D.api + "/connexion", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({code})});
     const j = await r.json();
-    if(j.ok){ session.set({qui: j.qui, jeton: j.jeton}); derniereRecherche = ""; location.hash = "#prive"; return true; }
+    if(j.ok){ session.set({qui: j.qui, droits: j.droits || (j.qui === "Sami" ? ["annonce","cours"] : ["annonce"]), jeton: j.jeton}); derniereRecherche = ""; location.hash = "#prive"; return true; }
   }catch(e){}
   return false;
 }
@@ -620,7 +620,7 @@ function vuePrive(){
   });
   const a = D.annonce;
   return `<h2>Espace privé</h2>
-  <p class="muted" style="margin:-4px 0 14px">Connecté : <b>${esc(s.qui)}</b>. Seuls Sami et Eyoub voient cette page.</p>
+  <p class="muted" style="margin:-4px 0 14px">Connecté : <b>${esc(s.qui)}</b> · ${(s.droits || []).includes("cours") ? "accès complet" : "annonces uniquement"}.</p>
   <div class="card">
     <h3>Annonce sur l'accueil</h3>
     ${a ? `<div class="annonce" style="margin:10px 0"><p>${esc(a.texte)}</p><p class="small muted">Publiée par ${esc(a.par)}${a.fin ? ` · affichée jusqu'au ${dateFr(a.fin)} inclus` : ""}</p></div>` : `<p class="muted small" style="margin:6px 0 10px">Aucune annonce affichée en ce moment.</p>`}
@@ -631,6 +631,7 @@ function vuePrive(){
     <div class="btns"><button class="btn gold" id="publier">Publier</button>${a ? '<button class="btn line" id="retirer">Retirer l\'annonce</button>' : ""}</div>
     <p id="pmsg" class="small" style="margin-top:10px;color:var(--gold)"></p>
   </div>
+  ${(s.droits || []).includes("cours") ? `<div class="card"><h3>Cours</h3><p class="muted small" style="margin-top:6px">Les cours publiés sur Telegram et SoundCloud arrivent seuls dans l'appli, deux fois par jour, rangés d'après leur titre. Le dépôt direct depuis cette page arrive bientôt.</p></div>` : ""}
   <div class="btns"><button class="btn line" id="deco">Se déconnecter de ce téléphone</button></div>`;
 }
 

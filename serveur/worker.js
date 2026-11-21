@@ -27,6 +27,10 @@ const egal = (a, b) => { // comparaison à temps constant
 };
 const cleSignature = env => `${env.CODE_SAMI}|${env.CODE_EYOUB}|reflexions`;
 
+// Droits : Sami a tout, Eyoub seulement les annonces
+const DROITS = { Sami: ["annonce", "cours"], Eyoub: ["annonce"] };
+const peut = (qui, droit) => !!qui && (DROITS[qui] || []).includes(droit);
+
 async function creerJeton(env, qui) {
   const fin = Date.now() + DUREE_JETON;
   return `${qui}.${fin}.${await hmac(cleSignature(env), `${qui}.${fin}`)}`;
@@ -64,13 +68,14 @@ export default {
         await env.KV.put(cleEssais, String(essais + 1), { expirationTtl: 900 });
         return json(req, { ok: false });
       }
-      return json(req, { ok: true, qui, jeton: await creerJeton(env, qui) });
+      return json(req, { ok: true, qui, droits: DROITS[qui], jeton: await creerJeton(env, qui) });
     }
 
     // Publier ou retirer l'annonce (réservé)
     if (url.pathname === "/annonce" && (req.method === "POST" || req.method === "DELETE")) {
       const qui = await lireJeton(env, req);
       if (!qui) return json(req, { ok: false, erreur: "Accès refusé" }, 401);
+      if (!peut(qui, "annonce")) return json(req, { ok: false, erreur: "Droit insuffisant" }, 403);
       if (req.method === "DELETE") { await env.KV.delete("annonce"); return json(req, { ok: true }); }
       let corps = {};
       try { corps = await req.json(); } catch (e) {}
