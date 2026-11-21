@@ -92,6 +92,13 @@ nav.tabs a.live .dot{display:block}
 .prog{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);text-decoration:none;font-weight:500}
 .card h3+.prog,.card div+.prog{margin-top:6px}
 .card.today{border-color:var(--gold-2);box-shadow:0 0 0 1px var(--gold-2) inset}
+.bienvenue{background:linear-gradient(160deg,var(--green) 0%,var(--green-2) 100%);color:#E6F0EA;border-radius:18px;padding:22px 20px;margin-bottom:14px;border:1px solid rgba(201,164,94,.45);font-size:15px;line-height:1.6}
+.bienvenue strong{color:#fff}
+.horaires{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.horaires div{background:rgba(255,255,255,.07);border:1px solid rgba(201,164,94,.35);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.horaires .tag{background:rgba(201,164,94,.18);color:var(--gold-2);align-self:flex-start}
+.horaires b{color:#fff;font:600 19px/1.2 var(--display)}
+.horaires span:last-child{font-size:12.5px;color:#BFD3C8}
 .more{display:block;margin:12px auto 0;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600}
 footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
 @media print{
@@ -177,12 +184,31 @@ function lot(items, rendu, taille = 40){
 }
 
 /* ---------- vues ---------- */
+function heureEte(d = new Date()){
+  // Heure d'été en France : du dernier dimanche de mars au dernier dimanche d'octobre
+  const dernierDim = m => { const x = new Date(d.getFullYear(), m + 1, 0); x.setDate(x.getDate() - x.getDay()); return x; };
+  return d >= dernierDim(2) && d < dernierDim(9);
+}
+function vueBienvenue(){
+  const h = D.conf.horaires || {}; const ete = heureEte();
+  return `<section class="bienvenue">
+    <p class="ar" style="font-size:24px;color:var(--gold-2);text-align:center;margin-bottom:6px">بسم الله الرحمن الرحيم</p>
+    <h2 style="margin:0 0 8px;color:#fff">Bienvenue</h2>
+    <p>Cette application rassemble les cours, prêches et rappels du frère <strong>Sami al Athary</strong>, donnés à la <strong>${esc(D.conf.mosquee || "mosquée")}</strong>.
+    Chaque cours suit un livre de science, lu et expliqué passage après passage.</p>
+    <div class="horaires">
+      <div><span class="tag">Cours</span><b>${esc(h.cours_jours || "")}</b><span>${esc(h.cours_moment || "")}</span></div>
+      <div><span class="tag">Prêche du vendredi</span><b>${esc(ete ? h.jumua_ete : h.jumua_hiver)}</b><span>${ete ? "horaire d'été" : "horaire d'hiver"} · ${esc(ete ? h.jumua_hiver : h.jumua_ete)} ${ete ? "en hiver" : "en été"}</span></div>
+    </div>
+  </section>`;
+}
 function vueAccueil(){
   const live = D.conf.direct && D.conf.direct.actif;
   const recents = D.eps.slice(0, 8);
   const enCours = D.series.filter(s => s.statut === "en cours" && s.type === "cours");
   const vendredi = D.eps.find(e => D.serie.get(e.serie).type === "preche");
   return `
+  ${vueBienvenue()}
   ${live ? `<a class="hero" href="#direct" style="display:block;text-decoration:none;margin-bottom:14px">
       <span class="tag live">En direct</span><h3>${esc(D.conf.direct.titre || "Cours en direct")}</h3><p>Rejoindre maintenant</p></a>` : ""}
   ${vendredi ? `<div class="hero">

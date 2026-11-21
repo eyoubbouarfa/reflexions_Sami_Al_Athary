@@ -7,38 +7,11 @@
   "lien": "",
   "prochain": "Les directs sont annoncés sur le canal Telegram."
  },
- "programme": [
-  {
-   "jour": "Dimanche",
-   "n": 0,
-   "series": [
-    "versets-unicite",
-    "tajrid"
-   ]
-  },
-  {
-   "jour": "Mardi",
-   "n": 2,
-   "series": [
-    "sahih-jami",
-    "hadiths-unicite"
-   ]
-  },
-  {
-   "jour": "Jeudi",
-   "n": 4,
-   "series": [
-    "muwatta",
-    "lumiere-foi"
-   ]
-  },
-  {
-   "jour": "Vendredi",
-   "n": 5,
-   "series": [
-    "compagnons",
-    "decouverte-messager"
-   ]
-  }
- ]
+ "mosquee": "Mosquée An-Nour",
+ "horaires": {
+  "cours_jours": "Mardi, jeudi et dimanche",
+  "cours_moment": "Entre Maghrib et Icha",
+  "jumua_hiver": "13 h",
+  "jumua_ete": "14 h"
+ }
 }
