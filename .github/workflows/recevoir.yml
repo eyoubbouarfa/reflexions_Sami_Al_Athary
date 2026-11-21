@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 30
     env:
       CODE_SAMI: ${{ secrets.CODE_SAMI }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       GH_TOKEN: ${{ github.token }}
       RANGES: /tmp/ranges.txt
     steps:

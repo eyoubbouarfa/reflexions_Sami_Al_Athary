@@ -29,6 +29,7 @@ FICHIER = RACINE / "data" / "episodes.json"
 API = json.loads((RACINE / "data" / "api.json").read_text())["url"]
 CF = next(s for s in SERIES if s["code"] == "CF")
 ETIQUETTE = "enregistrements"
+CANAL = "Sami_Athary"
 
 
 def cle_robot():
@@ -36,10 +37,45 @@ def cle_robot():
     return base64.b64encode(sig).decode().translate(str.maketrans("+/", "-_")).rstrip("=")
 
 
-def appel(chemin, methode="GET"):
-    req = urllib.request.Request(API + chemin, method=methode, headers={"X-Robot": cle_robot(), "User-Agent": "robot-reflexions"})
+def appel(chemin, methode="GET", donnees=None):
+    req = urllib.request.Request(API + chemin, method=methode, data=json.dumps(donnees).encode() if donnees else None,
+                                 headers={"X-Robot": cle_robot(), "User-Agent": "robot-reflexions", "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=300) as r:
         return r.read()
+
+
+def alerte(texte):
+    try:
+        appel("/alertes", "POST", {"texte": texte})
+    except Exception as e:
+        print("Alerte non envoyée :", e)
+
+
+def copie_telegram(fichier, titre, duree):
+    """Publie le mp3 sur le canal avec le robot Telegram. Renvoie le lien du post, ou None (et alerte Sami)."""
+    jeton = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    if not jeton:
+        alerte(f"« {titre} » n'a pas été copié sur Telegram : le robot Telegram n'est pas encore réglé. Le cours est bien dans l'appli.")
+        return None
+    try:
+        r = subprocess.run(["curl", "-s", "-m", "600", "-F", f"chat_id=@{CANAL}", "-F", f"caption={titre}", "-F", f"title={titre}",
+                            "-F", "performer=Sami al Athary", "-F", f"duration={duree}", "-F", f"audio=@{fichier}",
+                            f"https://api.telegram.org/bot{jeton}/sendAudio"], capture_output=True, text=True, timeout=700)
+        j = json.loads(r.stdout or "{}")
+        if not j.get("ok"):
+            raise RuntimeError(j.get("description") or r.stderr or "réponse vide")
+        return f"https://t.me/{CANAL}/{j['result']['message_id']}"
+    except Exception as e:
+        alerte(f"« {titre} » n'a pas pu être copié sur Telegram ({e}). Le cours est bien dans l'appli ; publie-le à la main si besoin.")
+        return None
+
+
+def duree_s(fichier):
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(fichier)], capture_output=True, text=True)
+    try:
+        return int(float(r.stdout.strip()))
+    except ValueError:
+        return 0
 
 
 def nom_fichier(c):
@@ -72,12 +108,13 @@ def main():
             subprocess.run(["ffmpeg", "-v", "error", "-y", *entrees, "-filter_complex", filtre, "-map", "[a]",
                             "-ac", "1", "-ar", "44100", "-b:a", "48k", str(sortie)], check=True)
             subprocess.run(["gh", "release", "upload", ETIQUETTE, str(sortie), "--clobber"], check=True)
+            post = copie_telegram(sortie, c["titre"] or "Cours", duree_s(sortie))
         s = serie_de(c["titre"]) or CF
         num, sous, fin = decouper(c["titre"], s) if s is not CF else (None, c["titre"], False)
         ident = 3_000_000_000 + int(time.time()) - 1_700_000_000 + len(ranges)
         audio = f"{API}/audio/{nom}"
         eps.insert(0, {"id": ident, "serie": s["id"], "num": num, "titre": sous, "fin": fin, "audio": audio,
-                       "post": audio, "date": c["date"][:10], "source": "appli"})
+                       "post": post or audio, "date": c["date"][:10], "source": "appli"})
         ranges.append(c)
         print(f"Rangé : {c['titre']} → {s['nom']}{f' n° {num}' if num is not None else ''}")
     FICHIER.write_text(json.dumps(eps, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

@@ -513,7 +513,7 @@ function afficher(){
   const [route, ...rest] = h.split("-"); const arg = rest.join("-");
   const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, sources: vueSources, recherche: vueRecherche, prive: vuePrive, ep: () => vueEpisode(arg), nouveau: () => vueNouveau(arg), direct: vueDirect};
   $app.innerHTML = (vues[route] || vueIntrouvable)();
-  if(route === "prive"){ brancherRec(); verifierEnregistrementLaisse(); }
+  if(route === "prive"){ brancherRec(); verifierEnregistrementLaisse(); chargerAlertes(); }
   bandeauRec();
   const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", nouveau: ""}[route] ?? route;
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t === onglet));
@@ -626,7 +626,7 @@ function vuePrive(){
   const a = D.annonce;
   return `<h2>Espace privé</h2>
   <p class="muted" style="margin:-4px 0 14px">Connecté : <b>${esc(s.qui)}</b> · ${(s.droits || []).includes("cours") ? "accès complet" : "annonces uniquement"}.</p>
-  ${(s.droits || []).includes("cours") ? carteEnregistrement() : ""}
+  ${(s.droits || []).includes("cours") ? carteAlertes() + carteEnregistrement() : ""}
   <div class="card">
     <h3>Annonce sur l'accueil</h3>
     ${a ? `<div class="annonce" style="margin:10px 0"><p>${esc(a.texte)}</p><p class="small muted">Publiée par ${esc(a.par)}${a.fin ? ` · affichée jusqu'au ${dateFr(a.fin)} inclus` : ""}</p></div>` : `<p class="muted small" style="margin:6px 0 10px">Aucune annonce affichée en ce moment.</p>`}
@@ -822,6 +822,29 @@ function bandeauRec(){
   if(!voir){ if(b) b.remove(); return; }
   if(!b){ b = document.createElement("a"); b.id = "bandeauRec"; b.href = "#prive"; b.style.cssText = "position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:50;background:#7a1f1f;color:#fff;padding:10px 14px;border-radius:14px;text-decoration:none;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)"; document.body.appendChild(b); }
   b.textContent = REC.etat === "enregistre" ? "● Enregistrement en cours — revenir" : "Enregistrement en pause — revenir";
+}
+
+/* ---------- Alertes pour Sami (copie Telegram ratée, etc.) ---------- */
+let alertesVues = "";
+async function chargerAlertes(){
+  const s = session.get(); if(!s || !(s.droits || []).includes("cours") || !D.api) return;
+  try{
+    const j = await (await fetch(D.api + "/alertes", {headers: {"Authorization": "Bearer " + s.jeton}, cache: "no-store"})).json();
+    const cle = JSON.stringify(j.alertes || []);
+    if(cle !== alertesVues){ alertesVues = cle; D.alertes = j.alertes || []; const el = document.getElementById("carteAlertes"); if(el){ el.outerHTML = carteAlertes(); brancherAlertes(); } }
+  }catch(e){}
+}
+function carteAlertes(){
+  const a = D.alertes || [];
+  setTimeout(brancherAlertes);
+  if(!a.length) return `<div id="carteAlertes"></div>`;
+  return `<div class="card" id="carteAlertes" style="border-color:#c0504d"><h3>Alertes</h3>
+    ${a.map(x => `<p class="small" style="margin-top:8px">${esc(x.texte)} <span class="muted">· ${dateFr(x.date.slice(0, 10))}</span></p>`).join("")}
+    <div class="btns"><button class="btn line" id="alertesOk">C'est noté, effacer</button></div></div>`;
+}
+function brancherAlertes(){
+  const b = document.getElementById("alertesOk"); if(!b) return;
+  b.onclick = async () => { const s = session.get(); try{ await fetch(D.api + "/alertes", {method: "DELETE", headers: {"Authorization": "Bearer " + s.jeton}}); D.alertes = []; alertesVues = "[]"; document.getElementById("carteAlertes").outerHTML = carteAlertes(); }catch(e){} };
 }
 
 /* ---------- Cours enregistrés pas encore rangés : écoutables tout de suite ---------- */

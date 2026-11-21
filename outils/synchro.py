@@ -154,6 +154,7 @@ def main():
     dernier = max((i for i in eps if i < 1_000_000), default=0)
 
     ajouts, maj, inconnus = 0, 0, []
+    posts_appli = {e["post"] for e in eps.values() if e.get("source") == "appli"}
     appli = {(e["serie"], e["num"]): e for e in eps.values() if e.get("source") == "appli" and e["num"] is not None}
     for x in posts_telegram(dernier, tout):
         e = episode_depuis_post(x)
@@ -164,6 +165,8 @@ def main():
         if ancien:
             if e["date"] and ancien.get("date") != e["date"]:
                 ancien["date"] = e["date"]; maj += 1
+            continue
+        if e["post"] in posts_appli:  # post fait par le robot à partir d'un enregistrement de l'appli
             continue
         double = appli.get((e["serie"], e["num"])) if e["num"] is not None else None
         if double:  # déjà enregistré depuis l'appli : on garde l'audio de l'appli, on note juste le lien Telegram

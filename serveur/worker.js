@@ -121,6 +121,22 @@ async function routesCours(req, env, url) {
     return json(req, { ok: true, supprimees: l.keys.length });
   }
 
+  // Alertes pour Sami (ex. copie Telegram ratée) : déposées par le robot, lues et effacées par Sami
+  if (p === "/alertes") {
+    if (req.method === "POST") {
+      if (!(await estRobot(env, req))) return json(req, { ok: false }, 401);
+      let a = {}; try { a = await req.json(); } catch (e) {}
+      const liste = (await env.KV.get("alertes", "json")) || [];
+      liste.unshift({ texte: String(a.texte || "").slice(0, 500), date: new Date().toISOString() });
+      await env.KV.put("alertes", JSON.stringify(liste.slice(0, 30)));
+      return json(req, { ok: true });
+    }
+    const qui = await lireJeton(env, req);
+    if (!peut(qui, "cours")) return json(req, { ok: false, erreur: "Accès refusé" }, 401);
+    if (req.method === "DELETE") { await env.KV.delete("alertes"); return json(req, { ok: true }); }
+    return json(req, { alertes: (await env.KV.get("alertes", "json")) || [] });
+  }
+
   // Écoute d'un cours rangé : relaie le mp3 stocké sur GitHub avec le bon type pour les téléphones
   m = /^\/audio\/([\w.-]+\.mp3)$/.exec(p);
   if (m && (req.method === "GET" || req.method === "HEAD")) {
@@ -140,7 +156,7 @@ export default {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
 
-    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/")) {
+    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/") || url.pathname === "/alertes") {
       const r = await routesCours(req, env, url);
       if (r) return r;
     }
