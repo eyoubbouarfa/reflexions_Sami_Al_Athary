@@ -121,6 +121,21 @@ def episode_depuis_post(x):
             "_reconnu": s is not CF, "_titre": titre}
 
 
+def maj_series(liste):
+    """Recalcule data/series.json (nombre de cours par série) d'après la liste des cours."""
+    fs = RACINE / "data" / "series.json"
+    anciennes = {s["id"]: s for s in json.loads(fs.read_text(encoding="utf-8"))["series"]}
+    pub = []
+    for s in SERIES:
+        nb = sum(1 for e in liste if e["serie"] == s["id"])
+        if nb:
+            d = {k: v for k, v in s.items() if k not in ("motifs", "code")} | {"nb": nb}
+            if anciennes.get(s["id"], {}).get("support"):
+                d["support"] = anciennes[s["id"]]["support"]
+            pub.append(d)
+    fs.write_text(json.dumps({"themes": THEMES, "series": pub}, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
 def pistes_soundcloud():
     try:
         r = subprocess.run(["yt-dlp", "--flat-playlist", "-J", SOUNDCLOUD], capture_output=True, text=True, timeout=900)
@@ -132,10 +147,14 @@ def pistes_soundcloud():
 
 def main():
     tout = "--tout" in sys.argv
+    if "--series-seules" in sys.argv:
+        maj_series(json.loads(FICHIER.read_text(encoding="utf-8")))
+        return
     eps = {e["id"]: e for e in json.loads(FICHIER.read_text(encoding="utf-8"))}
     dernier = max((i for i in eps if i < 1_000_000), default=0)
 
     ajouts, maj, inconnus = 0, 0, []
+    appli = {(e["serie"], e["num"]): e for e in eps.values() if e.get("source") == "appli" and e["num"] is not None}
     for x in posts_telegram(dernier, tout):
         e = episode_depuis_post(x)
         if not e:
@@ -145,6 +164,10 @@ def main():
         if ancien:
             if e["date"] and ancien.get("date") != e["date"]:
                 ancien["date"] = e["date"]; maj += 1
+            continue
+        double = appli.get((e["serie"], e["num"])) if e["num"] is not None else None
+        if double:  # déjà enregistré depuis l'appli : on garde l'audio de l'appli, on note juste le lien Telegram
+            double["post"] = e["post"]
             continue
         if not reconnu:
             inconnus.append((e["id"], titre))
@@ -174,17 +197,7 @@ def main():
     liste = sorted(eps.values(), key=lambda e: (e.get("date") or "0000", e["id"] if e["id"] < 1_000_000 else 0), reverse=True)
     FICHIER.write_text(json.dumps(liste, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
-    fs = RACINE / "data" / "series.json"
-    anciennes = {s["id"]: s for s in json.loads(fs.read_text(encoding="utf-8"))["series"]}
-    pub = []
-    for s in SERIES:
-        nb = sum(1 for e in liste if e["serie"] == s["id"])
-        if nb:
-            d = {k: v for k, v in s.items() if k not in ("motifs", "code")} | {"nb": nb}
-            if anciennes.get(s["id"], {}).get("support"):
-                d["support"] = anciennes[s["id"]]["support"]
-            pub.append(d)
-    fs.write_text(json.dumps({"themes": THEMES, "series": pub}, ensure_ascii=False, indent=1), encoding="utf-8")
+    maj_series(liste)
 
     print(f"{ajouts} cours ajoutés, {maj} dates complétées, {len(liste)} au total.")
     for i, t in inconnus:

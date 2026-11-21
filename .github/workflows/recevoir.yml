@@ -1,0 +1,51 @@
+name: Ranger les cours enregistrés
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recevoir
+  cancel-in-progress: false
+
+jobs:
+  ranger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CODE_SAMI: ${{ secrets.CODE_SAMI }}
+      GH_TOKEN: ${{ github.token }}
+      RANGES: /tmp/ranges.txt
+    steps:
+      - uses: actions/checkout@v4
+      - name: Y a-t-il des enregistrements ?
+        id: q
+        run: |
+          API=$(jq -r .url data/api.json)
+          N=$(curl -sf "$API/cours/attente" | jq '[.cours[] | select(.complet)] | length' || echo 0)
+          echo "n=$N" >> "$GITHUB_OUTPUT"
+      - if: steps.q.outputs.n != '0'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - if: steps.q.outputs.n != '0'
+        name: Convertir, stocker et classer
+        run: python outils/recevoir.py
+      - if: steps.q.outputs.n != '0'
+        name: Publier puis libérer le serveur
+        run: |
+          git config user.name "Eyoub Bouarfa"
+          git config user.email "eyoubbouarfa@users.noreply.github.com"
+          git add data/
+          OK=1
+          if ! git diff --cached --quiet; then
+            git commit -m "Nouveau cours enregistré"
+            OK=0
+            for i in 1 2 3; do if git pull --rebase -q && git push -q; then OK=1; break; fi; sleep 5; done
+          fi
+          test "$OK" = 1  # on ne libère le serveur que si le cours est bien publié
+          API=$(jq -r .url data/api.json)
+          KEY=$(python -c "import sys;sys.path.insert(0,'outils');from recevoir import cle_robot;print(cle_robot())")
+          for id in $(cat "$RANGES" 2>/dev/null); do curl -sf -X DELETE -H "X-Robot: $KEY" "$API/cours/$id"; echo; done

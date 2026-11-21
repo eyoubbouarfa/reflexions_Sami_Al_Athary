@@ -272,6 +272,7 @@ function vueAccueil(){
       <p>${esc(D.serie.get(vendredi.serie).nom)}${vendredi.num != null ? " · n° " + vendredi.num : ""}</p>
       <div class="btns"><a class="btn gold" href="#ep-${vendredi.id}">Écouter</a><a class="btn line" style="color:#fff;border-color:rgba(255,255,255,.3)" href="#preches">Tous les prêches</a></div>
     </div>` : ""}
+  ${blocAttente()}
   ${vueProgramme()}
   <h2>Derniers cours publiés</h2>
   <div class="list">${recents.map(e => ligneEp(e, true)).join("")}</div>
@@ -460,6 +461,7 @@ function vueEpisode(id){
   const i = freres.indexOf(e), prec = freres[i - 1], suiv = freres[i + 1];
   const t = D.textes[e.id];
   const sc = /^https:\/\/soundcloud\.com\//.test(e.audio);
+  const appli = e.source === "appli";
   setTimeout(() => {
     const b = document.getElementById("ecoute");
     if(b) b.onclick = () => { basculerEcoute(e.id); afficher(); };
@@ -470,9 +472,10 @@ function vueEpisode(id){
     <a class="tag" href="#serie-${s.id}" style="text-decoration:none">${esc(s.nom)}</a>
     <h2 style="margin:10px 0 4px">${e.num != null && e.titre ? `<span class="muted">n° ${e.num} · </span>` : ""}${esc(titreEp(e))}</h2>
     <div class="meta">${e.date ? `<span>${dateFr(e.date)}</span>` : ""}${s.auteur ? `<span>${esc(s.auteur)}</span>` : ""}${e.fin ? "<span>Dernier épisode de la série</span>" : ""}${s.type === "preche" ? "<span>Prêche du vendredi</span>" : ""}</div>
+    ${appli ? `<audio class="noprint" controls preload="none" style="width:100%;margin-top:12px" src="${esc(e.audio)}"></audio>` : ""}
     ${sc ? `<iframe class="player noprint" loading="lazy" allow="autoplay" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(e.audio)}&color=%239c7a42&visual=false&show_comments=false&show_teaser=false"></iframe>` : ""}
     <div class="btns">
-      <a class="btn gold" href="${esc(e.audio)}" target="_blank" rel="noopener">${sc ? "Ouvrir dans SoundCloud" : "Écouter"}</a>
+      ${appli ? "" : `<a class="btn gold" href="${esc(e.audio)}" target="_blank" rel="noopener">${sc ? "Ouvrir dans SoundCloud" : "Écouter"}</a>`}
       <button class="btn line" id="ecoute">${ecoutes.has(e.id) ? "✓ Écouté" : "Marquer comme écouté"}</button>
       ${D.pdfs && D.pdfs.has(e.id) ? `<a class="btn line" href="data/pdf/${e.id}.pdf" target="_blank" rel="noopener">Cours en PDF</a>` : ""}
       ${t ? '<button class="btn line" id="pdf">Imprimer les notes</button>' : ""}
@@ -484,7 +487,7 @@ function vueEpisode(id){
     ${prec ? `<a class="btn line" href="#ep-${prec.id}">‹ ${prec.num != null ? "n° " + prec.num : "Précédent"}</a>` : "<span></span>"}
     ${suiv ? `<a class="btn line" href="#ep-${suiv.id}">${suiv.num != null ? "n° " + suiv.num : "Suivant"} ›</a>` : ""}
   </div>
-  <footer><a href="${esc(e.post)}" target="_blank" rel="noopener">Voir la publication sur Telegram</a></footer>`;
+  ${/t\.me\//.test(e.post) ? `<footer><a href="${esc(e.post)}" target="_blank" rel="noopener">Voir la publication sur Telegram</a></footer>` : ""}`;
 }
 
 function vueDirect(){
@@ -508,9 +511,11 @@ function vueIntrouvable(){ return `<div class="empty">Page introuvable. <a href=
 function afficher(){
   const h = (location.hash || "#accueil").slice(1);
   const [route, ...rest] = h.split("-"); const arg = rest.join("-");
-  const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, sources: vueSources, recherche: vueRecherche, prive: vuePrive, ep: () => vueEpisode(arg), direct: vueDirect};
+  const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, sources: vueSources, recherche: vueRecherche, prive: vuePrive, ep: () => vueEpisode(arg), nouveau: () => vueNouveau(arg), direct: vueDirect};
   $app.innerHTML = (vues[route] || vueIntrouvable)();
-  const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", }[route] ?? route;
+  if(route === "prive"){ brancherRec(); verifierEnregistrementLaisse(); }
+  bandeauRec();
+  const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", nouveau: ""}[route] ?? route;
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t === onglet));
   document.getElementById("top").classList.toggle("sub", !["accueil", "themes", "preches", "sources", "recherche"].includes(route));
 }
@@ -621,6 +626,7 @@ function vuePrive(){
   const a = D.annonce;
   return `<h2>Espace privé</h2>
   <p class="muted" style="margin:-4px 0 14px">Connecté : <b>${esc(s.qui)}</b> · ${(s.droits || []).includes("cours") ? "accès complet" : "annonces uniquement"}.</p>
+  ${(s.droits || []).includes("cours") ? carteEnregistrement() : ""}
   <div class="card">
     <h3>Annonce sur l'accueil</h3>
     ${a ? `<div class="annonce" style="margin:10px 0"><p>${esc(a.texte)}</p><p class="small muted">Publiée par ${esc(a.par)}${a.fin ? ` · affichée jusqu'au ${dateFr(a.fin)} inclus` : ""}</p></div>` : `<p class="muted small" style="margin:6px 0 10px">Aucune annonce affichée en ce moment.</p>`}
@@ -631,8 +637,215 @@ function vuePrive(){
     <div class="btns"><button class="btn gold" id="publier">Publier</button>${a ? '<button class="btn line" id="retirer">Retirer l\'annonce</button>' : ""}</div>
     <p id="pmsg" class="small" style="margin-top:10px;color:var(--gold)"></p>
   </div>
-  ${(s.droits || []).includes("cours") ? `<div class="card"><h3>Cours</h3><p class="muted small" style="margin-top:6px">Les cours publiés sur Telegram et SoundCloud arrivent seuls dans l'appli, deux fois par jour, rangés d'après leur titre. Le dépôt direct depuis cette page arrive bientôt.</p></div>` : ""}
   <div class="btns"><button class="btn line" id="deco">Se déconnecter de ce téléphone</button></div>`;
+}
+
+/* ---------- Enregistrement des cours (Sami) ----------
+   L'audio est sauvegardé sur le téléphone toutes les 5 secondes : une coupure (appel, écran verrouillé,
+   batterie) ne fait perdre que les dernières secondes. On reprend, ça crée une nouvelle partie,
+   et le robot recolle toutes les parties en un seul mp3. */
+const REC = {etat: "repos", rec: null, flux: null, verrou: null, debutPartie: 0, cumul: 0, octets: 0, minuteur: null, info: "", envoi: null};
+const MAX_OCTETS_PARTIE = 18 * 1024 * 1024;
+const bdd = (() => {
+  let p;
+  const ouvrir = () => p ||= new Promise((ok, ko) => {
+    const r = indexedDB.open("enregistrements", 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore("morceaux", {autoIncrement: true}); r.result.createObjectStore("cours"); };
+    r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error);
+  });
+  const tx = async (store, mode, f) => { const db = await ouvrir(); return new Promise((ok, ko) => { const t = db.transaction(store, mode); const res = f(t.objectStore(store)); t.oncomplete = () => ok(res && res.result); t.onerror = () => ko(t.error); }); };
+  return {
+    cours: () => tx("cours", "readonly", s => s.get("courant")),
+    majCours: c => tx("cours", "readwrite", s => c ? s.put(c, "courant") : s.delete("courant")),
+    ajouter: m => tx("morceaux", "readwrite", s => s.add(m)),
+    tous: () => tx("morceaux", "readonly", s => s.getAll()),
+    vider: () => tx("morceaux", "readwrite", s => s.clear()),
+  };
+})();
+const typeAudio = () => ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"].find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || "";
+const hms = ms => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
+const dureeRec = () => REC.cumul + (REC.etat === "enregistre" ? Date.now() - REC.debutPartie : 0);
+
+async function garderEcranAllume(){
+  try{ if("wakeLock" in navigator && !REC.verrou) { REC.verrou = await navigator.wakeLock.request("screen"); REC.verrou.addEventListener("release", () => REC.verrou = null); } }catch(e){}
+}
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible" && REC.etat === "enregistre") garderEcranAllume(); });
+
+async function demarrerPartie(c){
+  REC.flux = REC.flux && REC.flux.active ? REC.flux : await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: true, autoGainControl: true}});
+  const type = typeAudio();
+  const r = new MediaRecorder(REC.flux, type ? {mimeType: type, audioBitsPerSecond: 32000} : {audioBitsPerSecond: 32000});
+  const n = c.parties; c.parties += 1; c.type = (r.mimeType || type || "audio/mp4").split(";")[0]; await bdd.majCours(c);
+  REC.octets = 0;
+  r.ondataavailable = async ev => {
+    if(!ev.data || !ev.data.size) return;
+    await bdd.ajouter({n, blob: ev.data});
+    REC.octets += ev.data.size;
+    if(REC.octets > MAX_OCTETS_PARTIE && REC.etat === "enregistre" && r.state === "recording"){ // partie pleine : on enchaîne sur une nouvelle
+      r.onstop = () => demarrerPartie(c).catch(erreurRec); r.stop();
+    }
+  };
+  r.onstop = () => { if(REC.etat === "enregistre") interrompu(); };
+  r.onerror = () => interrompu();
+  REC.flux.getAudioTracks().forEach(t => t.onended = () => { if(REC.etat === "enregistre") interrompu(); });
+  r.start(5000);
+  REC.rec = r; REC.etat = "enregistre"; REC.debutPartie = Date.now(); REC.info = "";
+  garderEcranAllume(); majRec();
+}
+function interrompu(){
+  if(REC.etat !== "enregistre") return;
+  REC.cumul += Date.now() - REC.debutPartie; REC.etat = "interrompu";
+  REC.info = "L'enregistrement s'est coupé (appel, écran verrouillé ou micro pris par une autre appli). Tout ce qui précède est gardé. Appuie sur Reprendre.";
+  bdd.cours().then(c => c && (c.duree = REC.cumul, bdd.majCours(c)));
+  majRec();
+}
+const erreurRec = e => { REC.etat = REC.etat === "enregistre" ? "interrompu" : REC.etat; REC.info = "Micro inaccessible : autorise le micro pour l'appli dans les réglages du téléphone. (" + (e && e.message || e) + ")"; majRec(); };
+
+async function commencerCours(){
+  const titre = (document.getElementById("rtitre") || {}).value?.trim() || "";
+  if(!titre){ REC.info = "Donne d'abord un titre, comme d'habitude : numéro, livre, passage."; majRec(); return; }
+  if(!window.MediaRecorder){ REC.info = "Ce téléphone ne permet pas d'enregistrer depuis l'appli. Mets-le à jour ou utilise « Envoyer un fichier »."; majRec(); return; }
+  await bdd.vider();
+  const c = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), titre, date: new Date().toISOString(), parties: 0, duree: 0};
+  REC.cumul = 0;
+  await demarrerPartie(c).catch(erreurRec);
+}
+async function pauseCours(){
+  if(REC.etat === "enregistre" && REC.rec){ REC.rec.pause(); REC.cumul += Date.now() - REC.debutPartie; REC.etat = "pause"; }
+  else if(REC.etat === "pause" && REC.rec && REC.rec.state === "paused"){ REC.rec.resume(); REC.debutPartie = Date.now(); REC.etat = "enregistre"; garderEcranAllume(); }
+  majRec();
+}
+async function reprendreCours(){ const c = await bdd.cours(); if(c) await demarrerPartie(c).catch(erreurRec); }
+function arreterMicro(){ try{ REC.flux && REC.flux.getTracks().forEach(t => t.stop()); }catch(e){} REC.flux = null; try{ REC.verrou && REC.verrou.release(); }catch(e){} }
+
+async function terminerCours(){
+  const c = await bdd.cours(); if(!c) return;
+  const titre = (document.getElementById("rtitre") || {}).value?.trim(); if(titre) c.titre = titre;
+  if(REC.rec && REC.rec.state !== "inactive"){
+    if(REC.etat === "enregistre") REC.cumul += Date.now() - REC.debutPartie;
+    REC.etat = "fin";
+    await new Promise(ok => { REC.rec.onstop = () => setTimeout(ok, 300); REC.rec.stop(); });
+  }
+  arreterMicro(); c.duree = REC.cumul; c.fini = true; await bdd.majCours(c);
+  await envoyerCours();
+}
+async function envoyerCours(){
+  const c = await bdd.cours(); if(!c) return;
+  const morceaux = await bdd.tous();
+  const parties = [...new Set(morceaux.map(m => m.n))].sort((a, b) => a - b);
+  if(!parties.length){ REC.etat = "repos"; REC.info = "Rien n'a été enregistré."; await bdd.majCours(null); majRec(); return; }
+  REC.etat = "envoi";
+  try{
+    for(let i = 0; i < parties.length; i++){
+      REC.info = `Envoi ${i + 1}/${parties.length}…`; majRec();
+      const blob = new Blob(morceaux.filter(m => m.n === parties[i]).map(m => m.blob), {type: c.type || "audio/mp4"});
+      await envoyerPartie(c, i, blob, i === parties.length - 1);
+    }
+    await bdd.vider(); await bdd.majCours(null);
+    REC.etat = "repos"; REC.cumul = 0; REC.titre = "";
+    REC.info = `« ${c.titre} » est envoyé. Il est écoutable tout de suite sur l'accueil, et rangé dans son livre d'ici une demi-heure.`;
+    chargerAttente();
+  }catch(e){ REC.etat = "echec"; REC.info = "Envoi impossible : " + e.message + ". L'enregistrement reste sur le téléphone, réessaie avec une meilleure connexion."; }
+  majRec();
+}
+async function envoyerPartie(c, n, blob, dernier){
+  const s = session.get(); if(!s) throw new Error("non connecté");
+  const q = new URLSearchParams({id: c.id, n, dernier: dernier ? "1" : "0", titre: c.titre, date: c.date});
+  const r = await fetch(`${D.api}/cours/partie?${q}`, {method: "POST", headers: {"Content-Type": blob.type || "audio/mp4", "Authorization": "Bearer " + s.jeton}, body: blob});
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok || !j.ok) throw new Error(j.erreur || "erreur " + r.status);
+}
+async function envoyerFichier(f){
+  const titre = (document.getElementById("rtitre") || {}).value?.trim() || f.name.replace(/\.[^.]+$/, "");
+  if(f.size > 24 * 1024 * 1024){ REC.info = "Fichier trop lourd (24 Mo max). Enregistre plutôt depuis l'appli, qui découpe toute seule."; majRec(); return; }
+  REC.etat = "envoi"; REC.info = "Envoi du fichier…"; majRec();
+  try{
+    await envoyerPartie({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), titre, date: new Date(f.lastModified || Date.now()).toISOString()}, 0, f, true);
+    REC.etat = "repos"; REC.info = `« ${titre} » est envoyé.`; chargerAttente();
+  }catch(e){ REC.etat = "repos"; REC.info = "Envoi impossible : " + e.message; }
+  majRec();
+}
+async function abandonnerCours(){
+  if(!confirm("Supprimer cet enregistrement du téléphone ? Il sera perdu.")) return;
+  try{ REC.rec && REC.rec.state !== "inactive" && (REC.etat = "fin", REC.rec.stop()); }catch(e){}
+  arreterMicro(); await bdd.vider(); await bdd.majCours(null);
+  REC.etat = "repos"; REC.cumul = 0; REC.info = "Enregistrement supprimé."; majRec();
+}
+
+// Au retour dans l'espace privé : un enregistrement non envoyé est retrouvé tel quel
+async function verifierEnregistrementLaisse(){
+  if(REC.etat !== "repos") return;
+  const c = await bdd.cours().catch(() => null);
+  if(c){ REC.etat = c.fini ? "echec" : "interrompu"; REC.cumul = c.duree || 0; REC.info = c.fini ? "Un cours terminé n'a pas pu être envoyé." : "Un enregistrement a été coupé avant la fin. Tu peux le reprendre ou l'envoyer tel quel."; REC.titre = c.titre; majRec(); }
+}
+
+function carteEnregistrement(){
+  const e = REC.etat, d = hms(dureeRec());
+  const boutons = {
+    repos: `<button class="btn gold" id="rgo">● Commencer l'enregistrement</button>`,
+    enregistre: `<button class="btn line" id="rpause">Pause</button><button class="btn gold" id="rfin">Terminer et envoyer</button>`,
+    pause: `<button class="btn gold" id="rpause">Reprendre</button><button class="btn line" id="rfin">Terminer et envoyer</button>`,
+    interrompu: `<button class="btn gold" id="rrep">Reprendre</button><button class="btn line" id="rfin">Envoyer tel quel</button><button class="btn line" id="rsup">Supprimer</button>`,
+    echec: `<button class="btn gold" id="renv">Réessayer l'envoi</button><button class="btn line" id="rsup">Supprimer</button>`,
+    envoi: ``, fin: ``,
+  }[e] || "";
+  return `<div class="card" id="carteRec">
+    <h3>Enregistrer un cours</h3>
+    <label class="small muted" for="rtitre">Titre (comme d'habitude : numéro, livre, passage)</label>
+    <input id="rtitre" value="${esc(REC.titre || "")}" placeholder="58 - Muwatta - Livre de la prière du witr" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
+    ${e !== "repos" ? `<p style="font-size:30px;font-weight:600;margin:4px 0;font-variant-numeric:tabular-nums"><span style="color:${e === "enregistre" ? "#d64545" : "var(--gold)"}">●</span> <span id="rtemps">${d}</span> <span class="small muted">${{enregistre: "enregistrement", pause: "en pause", interrompu: "coupé", envoi: "envoi", echec: "non envoyé", fin: "fin"}[e]}</span></p>` : ""}
+    <div class="btns">${boutons}</div>
+    ${e === "repos" ? `<label class="btn line" style="margin-top:8px;display:inline-flex">Envoyer un fichier audio<input id="rfich" type="file" accept="audio/*" hidden></label>` : ""}
+    <p id="rinfo" class="small" style="margin-top:10px;color:var(--gold)">${esc(REC.info)}</p>
+    ${e === "repos" || e === "enregistre" ? `<p class="small muted" style="margin-top:8px">Avant de commencer : active « Ne pas déranger » pour éviter les appels, et laisse l'appli ouverte. L'écran reste allumé tout seul. Si ça coupe quand même, rien n'est perdu.</p>` : ""}
+  </div>`;
+}
+function majRec(){
+  const el = document.getElementById("carteRec");
+  if(el){
+    const t = document.getElementById("rtitre"); if(t) REC.titre = t.value;
+    el.outerHTML = carteEnregistrement(); brancherRec();
+  }
+  bandeauRec();
+  clearInterval(REC.minuteur);
+  if(REC.etat === "enregistre") REC.minuteur = setInterval(() => { const x = document.getElementById("rtemps"); if(x) x.textContent = hms(dureeRec()); }, 1000);
+}
+function brancherRec(){
+  const on = (id, f) => { const b = document.getElementById(id); if(b) b.onclick = f; };
+  on("rgo", commencerCours); on("rpause", pauseCours); on("rfin", terminerCours); on("rrep", reprendreCours); on("renv", envoyerCours); on("rsup", abandonnerCours);
+  const f = document.getElementById("rfich"); if(f) f.onchange = () => f.files[0] && envoyerFichier(f.files[0]);
+  const t = document.getElementById("rtitre"); if(t) t.oninput = () => REC.titre = t.value;
+}
+function bandeauRec(){
+  let b = document.getElementById("bandeauRec");
+  const voir = ["enregistre", "pause"].includes(REC.etat) && !location.hash.startsWith("#prive");
+  if(!voir){ if(b) b.remove(); return; }
+  if(!b){ b = document.createElement("a"); b.id = "bandeauRec"; b.href = "#prive"; b.style.cssText = "position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:50;background:#7a1f1f;color:#fff;padding:10px 14px;border-radius:14px;text-decoration:none;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)"; document.body.appendChild(b); }
+  b.textContent = REC.etat === "enregistre" ? "● Enregistrement en cours — revenir" : "Enregistrement en pause — revenir";
+}
+
+/* ---------- Cours enregistrés pas encore rangés : écoutables tout de suite ---------- */
+async function chargerAttente(){
+  if(!D.api) return;
+  try{
+    const j = await (await fetch(D.api + "/cours/attente", {cache: "no-store"})).json();
+    D.attente = (j.cours || []).filter(c => c.complet);
+    const h = (location.hash || "#accueil").slice(1);
+    if(h === "accueil" || h.startsWith("nouveau")) afficher();
+  }catch(e){}
+}
+function blocAttente(){
+  if(!D.attente || !D.attente.length) return "";
+  return `<h2>Tout juste enregistrés</h2><div class="list">${D.attente.map(c => `<a class="row" href="#nouveau-${c.id}"><span class="num">●</span><span class="txt"><span class="t1">${esc(c.titre || "Cours")}</span><span class="t2">${dateFr(c.date.slice(0, 10))} · en cours de rangement</span></span><span class="chev">›</span></a>`).join("")}</div>`;
+}
+function vueNouveau(id){
+  const c = (D.attente || []).find(x => x.id === id);
+  if(!c) return `<div class="empty">Ce cours vient d'être rangé dans son livre. <a href="#accueil">Retour à l'accueil</a></div>`;
+  return `<div class="card"><span class="tag">Tout juste enregistré</span>
+    <h2 style="margin:10px 0 4px">${esc(c.titre || "Cours")}</h2>
+    <div class="meta"><span>${dateFr(c.date.slice(0, 10))}</span></div>
+    ${c.parties.map((n, i) => `${c.parties.length > 1 ? `<p class="small muted" style="margin-top:10px">Partie ${i + 1}</p>` : ""}<audio controls preload="none" style="width:100%;margin-top:10px" src="${D.api}/cours/partie/${c.id}/${n}"></audio>`).join("")}
+    <p class="small muted" style="margin-top:12px">Il sera rangé dans son livre d'ici une demi-heure.</p></div>`;
 }
 
 /* ---------- Comptage anonyme (GoatCounter) : aucun nom, aucun cookie, aucune adresse IP conservée ---------- */
@@ -672,6 +885,7 @@ async function charger(nom, defaut){
   ouvrirPorte();
   afficher();
   chargerAnnonce();
+  chargerAttente();
   compter(STANDALONE ? "/ouverture/appli-installee" : "/ouverture/navigateur", STANDALONE ? "Ouverture depuis l'icône" : "Ouverture dans le navigateur");
 })();
 if("serviceWorker" in navigator && location.protocol === "https:" && !/claude|anthropic/.test(location.hostname)){
