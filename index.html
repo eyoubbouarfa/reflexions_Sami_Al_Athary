@@ -83,12 +83,15 @@ mark{background:#F1DFAF;color:#11261D;border-radius:3px;padding:0 2px}
 .empty{text-align:center;padding:28px 12px;color:var(--muted)}
 .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:6px}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;padding:6px 4px calc(6px + var(--safe-b));z-index:6}
-nav.tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:500;color:var(--muted);text-decoration:none;padding:4px 0}
+nav.tabs a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:500;color:var(--muted);text-decoration:none;padding:4px 0}
 nav.tabs a svg{width:23px;height:23px}
 nav.tabs a.on{color:var(--green)}
 @media (prefers-color-scheme:dark){nav.tabs a.on{color:var(--gold)}}
 nav.tabs a .dot{width:7px;height:7px;border-radius:50%;background:#B3261E;position:absolute;margin-left:14px;display:none}
 nav.tabs a.live .dot{display:block}
+.prog{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);text-decoration:none;font-weight:500}
+.card h3+.prog,.card div+.prog{margin-top:6px}
+.card.today{border-color:var(--gold-2);box-shadow:0 0 0 1px var(--gold-2) inset}
 .more{display:block;margin:12px auto 0;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600}
 footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
 @media print{
@@ -110,6 +113,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
   <a href="#accueil" data-t="accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Accueil</a>
   <a href="#themes" data-t="themes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h6v14H4zM14 5h6v14h-6z"/><path d="M6 9h2M16 9h2"/></svg>Thèmes</a>
   <a href="#preches" data-t="preches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M5 21V11a7 7 0 0 1 14 0v10M3 21h18M9 21v-5a3 3 0 0 1 6 0v5"/></svg>Vendredi</a>
+  <a href="#sources" data-t="sources"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5V19.5"/></svg>Sources</a>
   <a href="#recherche" data-t="recherche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>Recherche</a>
   <a href="#direct" data-t="direct"><span class="dot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></svg>Direct</a>
 </nav>
@@ -184,19 +188,32 @@ function vueAccueil(){
       <p>${esc(D.serie.get(vendredi.serie).nom)}${vendredi.num != null ? " · n° " + vendredi.num : ""}</p>
       <div class="btns"><a class="btn gold" href="#ep-${vendredi.id}">Écouter</a><a class="btn line" style="color:#fff;border-color:rgba(255,255,255,.3)" href="#preches">Tous les prêches</a></div>
     </div>` : ""}
-  <h2>Livres en cours d'étude</h2>
-  <div class="list">${enCours.map(s => {
-    const p = progression(s.id), nx = prochainEp(s.id);
-    const dernier = (D.bySerie.get(s.id) || [])[0];
-    const info = p.n ? (nx ? `reprendre au n° ${nx.num ?? "?"}` : "") : (dernier && dernier.num != null ? `dernier cours : n° ${dernier.num}` : "");
-    return `<a class="row" href="#serie-${s.id}" style="align-items:flex-start">
-      <span class="txt"><span class="t1">${esc(s.nom)}</span>
-      <span class="t2" style="display:block">${[s.auteur, info].filter(Boolean).map(esc).join(" · ")}</span>
-      ${p.n ? `<span class="bar"><i style="width:${p.pct}%"></i></span>` : ""}</span>${chev}</a>`;
-  }).join("")}</div>
+  ${vueProgramme()}
   <h2>Derniers cours publiés</h2>
   <div class="list">${recents.map(e => ligneEp(e, true)).join("")}</div>
   <footer>${D.eps.length} cours et prêches classés · <a href="${esc(D.conf.telegram)}">Canal Telegram</a></footer>`;
+}
+
+function vueProgramme(){
+  const prog = D.conf.programme || []; if(!prog.length) return "";
+  const auj = new Date().getDay();
+  return `<h2>Programme de la semaine</h2><div class="list">${prog.map(j => `
+    <div class="card ${j.n === auj ? "today" : ""}"><div style="display:flex;justify-content:space-between;align-items:baseline">
+      <h3>${esc(j.jour)}</h3>${j.n === auj ? '<span class="tag">Aujourd\'hui</span>' : ""}</div>
+      ${j.series.filter(id => D.serie.has(id)).map(id => { const s = D.serie.get(id), der = (D.bySerie.get(id) || [])[0];
+        return `<a class="prog" href="#serie-${id}"><span>${esc(s.nom)}</span><span class="muted small">${der && der.num != null ? "dernier : n° " + der.num : ""} ›</span></a>`; }).join("")}
+    </div>`).join("")}</div>`;
+}
+
+function vueSources(){
+  return `<h2>Sources</h2>
+  <p class="muted small" style="margin:-4px 0 12px">Les livres étudiés dans les cours, avec leur support quand il est disponible.</p>
+  ${D.themes.map(t => { const ss = D.series.filter(s => s.theme === t.id && s.type === "cours"); if(!ss.length) return "";
+    return `<h3 style="margin:18px 0 8px">${esc(t.nom)}</h3><div class="list">${ss.map(s => `
+      <div class="card"><a href="#serie-${s.id}" style="text-decoration:none"><b style="font:600 18px/1.25 var(--display)">${esc(s.nom)}</b></a>
+      ${s.livre ? `<p class="ar" style="color:var(--gold);font-size:18px;text-align:left">${esc(s.livre)}</p>` : ""}
+      <div class="meta">${s.auteur ? `<span>${esc(s.auteur)}</span>` : ""}<span>${s.nb} cours</span></div>
+      <div class="btns" style="margin-top:10px">${s.support ? `<a class="btn gold" href="${esc(s.support)}" target="_blank" rel="noopener">Ouvrir le support</a>` : '<span class="btn line" style="opacity:.55">Support à venir</span>'}</div></div>`).join("")}</div>`; }).join("")}`;
 }
 
 function vueThemes(){
@@ -388,11 +405,11 @@ function vueIntrouvable(){ return `<div class="empty">Page introuvable. <a href=
 function afficher(){
   const h = (location.hash || "#accueil").slice(1);
   const [route, ...rest] = h.split("-"); const arg = rest.join("-");
-  const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, recherche: vueRecherche, ep: () => vueEpisode(arg), direct: vueDirect};
+  const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, sources: vueSources, recherche: vueRecherche, ep: () => vueEpisode(arg), direct: vueDirect};
   $app.innerHTML = (vues[route] || vueIntrouvable)();
   const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", }[route] ?? route;
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t === onglet));
-  document.getElementById("top").classList.toggle("sub", !["accueil", "themes", "preches", "recherche", "direct"].includes(route));
+  document.getElementById("top").classList.toggle("sub", !["accueil", "themes", "preches", "sources", "recherche", "direct"].includes(route));
   document.querySelector('#tabs a[data-t="direct"]').classList.toggle("live", !!(D.conf.direct && D.conf.direct.actif));
 }
 let derniereRoute = "";
