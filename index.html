@@ -99,6 +99,8 @@ nav.tabs a.live .dot{display:block}
 .horaires .tag{background:rgba(201,164,94,.18);color:var(--gold-2);align-self:flex-start}
 .horaires b{color:#fff;font:600 19px/1.2 var(--display)}
 .horaires span:last-child{font-size:12.5px;color:#BFD3C8}
+.adresse{font-size:12px;color:#BFD3C8;margin-top:6px}
+.porte .infos .adr{display:block;font-size:11px;opacity:.7;margin-top:4px}
 .ce-jour{margin-top:12px;padding-top:12px;border-top:1px solid rgba(201,164,94,.3);color:#fff;font-size:14.5px}
 .ce-jour b{color:var(--gold-2)}
 .more{display:block;margin:12px auto 0;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600}
@@ -237,8 +239,9 @@ function vueBienvenue(){
   return `<section class="bienvenue">
     <p class="ar" style="font-size:24px;color:var(--gold-2);text-align:center;margin-bottom:6px">بسم الله الرحمن الرحيم</p>
     <h2 style="margin:0 0 8px;color:#fff">Bienvenue</h2>
-    <p>Cette application rassemble les cours, prêches et rappels du frère <strong>Sami al Athary</strong>, donnés à la <strong>${esc(D.conf.mosquee || "mosquée")}</strong>${D.conf.adresse ? `, ${esc(D.conf.adresse)}` : ""}.
+    <p>Cette application rassemble les cours, prêches et rappels du frère <strong>Sami al Athary</strong>, donnés à la <strong>${esc(D.conf.mosquee || "mosquée")}</strong>.
     Chaque cours suit un livre de science, lu et expliqué passage après passage.</p>
+    ${D.conf.adresse ? `<p class="adresse">📍 ${esc(D.conf.adresse)}</p>` : ""}
     <div class="horaires">
       <div><span class="tag">Cours</span><b>${esc(h.cours_jours || "")}</b><span>${esc(h.cours_moment || "")}</span></div>
       <div><span class="tag">Prêche du vendredi</span><b>${esc(ete ? h.jumua_ete : h.jumua_hiver)}</b><span>${ete ? "horaire d'été" : "horaire d'hiver"} · ${esc(ete ? h.jumua_hiver : h.jumua_ete)} ${ete ? "en hiver" : "en été"}</span></div>
@@ -524,9 +527,10 @@ function ouvrirPorte(){
     <div class="har">${esc(h.ar)}</div>
     <div class="hfr">${h.type.startsWith("Invocation coranique") ? esc(h.fr) : "« " + esc(h.fr) + " »"}</div>
     <div class="href">${esc(h.ref)}</div>
-    <div class="infos">Cours donnés à la <b>${esc(D.conf.mosquee || "mosquée")}</b>, Clermont-Ferrand<br>
+    <div class="infos">Cours donnés à la <b>${esc(D.conf.mosquee || "mosquée")}</b><br>
       <b>${esc(hr.cours_jours || "")}</b>, ${esc((hr.cours_moment || "").replace(/^Entre/, "entre"))}<br>
-      Prêche du vendredi à <b>${esc(ete ? hr.jumua_ete : hr.jumua_hiver)}</b></div>`;
+      Prêche du vendredi à <b>${esc(ete ? hr.jumua_ete : hr.jumua_hiver)}</b>
+      ${D.conf.adresse ? `<span class="adr">${esc(D.conf.adresse)}</span>` : ""}</div>`;
   el.insertAdjacentHTML("beforeend", `<button class="entrer" id="entrer"><span class="ring"><i></i></span>Entrer</button>`);
   const fermer = () => { el.classList.add("out"); setTimeout(() => el.remove(), 550); };
   document.getElementById("entrer").onclick = fermer;
