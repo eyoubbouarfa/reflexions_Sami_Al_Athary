@@ -109,18 +109,21 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
 /* ---------- Écran d'entrée ---------- */
 .porte{position:fixed;inset:0;height:100dvh;z-index:50;background:radial-gradient(120% 80% at 50% 28%,#1A6B4E,#06281C);color:#fff;display:grid;place-items:center;padding:calc(2.5vh + var(--safe-t)) 22px calc(2vh + var(--safe-b));text-align:center;transition:opacity .5s;overflow:hidden}
 .porte.out{opacity:0;pointer-events:none}
-.porte .in{display:grid;gap:clamp(6px,1.6vh,14px);max-width:520px;width:100%;padding-bottom:clamp(110px,18vh,160px)}
-.porte .logo{width:clamp(74px,14vh,128px);height:clamp(74px,14vh,128px);justify-self:center;border-radius:50%;box-shadow:0 8px 30px rgba(0,0,0,.4),0 0 0 2px rgba(201,164,94,.7)}
+.porte .in{display:grid;gap:clamp(6px,1.6vh,14px);max-width:520px;width:100%;}
+.porte .logo{width:clamp(60px,13vh,128px);height:clamp(60px,13vh,128px);justify-self:center;border-radius:50%;box-shadow:0 8px 30px rgba(0,0,0,.4),0 0 0 2px rgba(201,164,94,.7)}
 .porte h1{font:600 clamp(24px,4vh,32px)/1.1 var(--display);letter-spacing:.3px;margin-top:4px}
 .porte .devise{font-size:11.5px;letter-spacing:2.4px;text-transform:uppercase;color:var(--gold-2)}
 .porte .filet{display:none;width:70px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-2),transparent);justify-self:center;margin:4px 0}
 .porte .genre{justify-self:center;font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#15241C;background:var(--gold-2);border-radius:99px;padding:3px 12px}
-.porte .har{font-family:var(--ar);font-size:clamp(17px,2.9vh,24px);line-height:1.7;direction:rtl;color:#F1DFAF}
-.porte .hfr{font:italic 600 clamp(16px,2.6vh,21px)/1.3 var(--display);text-wrap:balance}
+.porte .har{font-family:var(--ar);font-size:clamp(16px,2.8vh,24px);line-height:1.6;direction:rtl;color:#F1DFAF}
+.porte .hfr{font:italic 600 clamp(15px,2.5vh,21px)/1.28 var(--display);text-wrap:balance}
 .porte .href{font-size:12px;opacity:.75}
 .porte .infos{font-size:clamp(12px,1.7vh,13.5px);line-height:1.5;color:#CFE0D6;background:rgba(255,255,255,.06);border:1px solid rgba(201,164,94,.3);border-radius:14px;padding:12px 14px}
 .porte .infos b{color:#fff}
-.porte .entrer{position:absolute;left:auto;top:auto;right:20px;place-self:end end;bottom:calc(max(70px, 10vh) + env(safe-area-inset-bottom,0px));z-index:51;width:max-content;display:inline-flex;align-items:center;gap:12px;padding:14px 30px;border-radius:99px;background:linear-gradient(180deg,#D9B873,#A8833F);color:#15241C;font:700 16px var(--body);letter-spacing:.5px;box-shadow:0 6px 20px rgba(0,0,0,.35);position:relative}
+.porte .entrer{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(6px,1.2vh,10px);padding:clamp(10px,1.6vh,14px) 0;width:54px;border-radius:99px;background:linear-gradient(180deg,#D9B873,#A8833F);color:#15241C;font:800 clamp(13px,2vh,16px)/1 var(--body);box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.porte .bas{display:flex;gap:10px;align-items:stretch}
+.porte .bas .infos{flex:1;display:flex;flex-direction:column;justify-content:center}
+.porte .entrer .lettres{writing-mode:vertical-rl;text-orientation:upright;letter-spacing:clamp(0px,.3vh,2px)}
 .porte .entrer .ring{position:relative;width:18px;height:18px;display:grid;place-items:center}
 .porte .entrer .ring::before,.porte .entrer .ring::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid #15241C;animation:ripple 1.6s ease-out infinite}
 .porte .entrer .ring::after{animation-delay:.8s}
@@ -527,11 +530,11 @@ function ouvrirPorte(){
     <div class="har">${esc(h.ar)}</div>
     <div class="hfr">${h.type.startsWith("Invocation coranique") ? esc(h.fr) : "« " + esc(h.fr) + " »"}</div>
     <div class="href">${esc(h.ref)}</div>
-    <div class="infos">Cours donnés à la <b>${esc(D.conf.mosquee || "mosquée")}</b><br>
+    <div class="bas"><div class="infos"><span>Cours donnés à la <b>${esc(D.conf.mosquee || "mosquée")}</b><br>
       <b>${esc(hr.cours_jours || "")}</b>, ${esc((hr.cours_moment || "").replace(/^Entre/, "entre"))}<br>
       Prêche du vendredi à <b>${esc(ete ? hr.jumua_ete : hr.jumua_hiver)}</b>
-      ${D.conf.adresse ? `<span class="adr">${esc(D.conf.adresse)}</span>` : ""}</div>`;
-  el.insertAdjacentHTML("beforeend", `<button class="entrer" id="entrer"><span class="ring"><i></i></span>Entrer</button>`);
+      ${D.conf.adresse ? `<span class="adr">${esc(D.conf.adresse)}</span>` : ""}</span></div>
+    <button class="entrer" id="entrer" aria-label="Entrer"><span class="ring"><i></i></span><span class="lettres">ENTRER</span></button></div>`;
   const fermer = () => { el.classList.add("out"); setTimeout(() => el.remove(), 550); };
   document.getElementById("entrer").onclick = fermer;
 }
