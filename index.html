@@ -101,6 +101,10 @@ nav.tabs a.live .dot{display:block}
 .horaires span:last-child{font-size:12.5px;color:#BFD3C8}
 .adresse{font-size:12px;color:#BFD3C8;margin-top:6px}
 .porte .infos .adr{display:block;font-size:11px;opacity:.7;margin-top:4px}
+.annonce{background:var(--gold-soft);border:1.5px solid var(--gold-2);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.annonce p{margin-top:6px;font-weight:500;line-height:1.45}
+.porte .porte-annonce{background:rgba(201,164,94,.18);border:1px solid var(--gold-2);border-radius:12px;padding:8px 12px;font-size:clamp(12px,calc(1.8*var(--vh1,1vh)),14px);color:#fff}
+.porte .porte-annonce b{color:var(--gold-2)}
 .ce-jour{margin-top:12px;padding-top:12px;border-top:1px solid rgba(201,164,94,.3);color:#fff;font-size:14.5px}
 .ce-jour b{color:var(--gold-2)}
 .more{display:block;margin:12px auto 0;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600}
@@ -258,6 +262,7 @@ function vueAccueil(){
   const enCours = D.series.filter(s => s.statut === "en cours" && s.type === "cours");
   const vendredi = D.eps.find(e => D.serie.get(e.serie).type === "preche");
   return `
+  ${blocAnnonce()}
   ${vueBienvenue()}
   ${live ? `<a class="hero" href="#direct" style="display:block;text-decoration:none;margin-bottom:14px">
       <span class="tag live">En direct</span><h3>${esc(D.conf.direct.titre || "Cours en direct")}</h3><p>Rejoindre maintenant</p></a>` : ""}
@@ -387,6 +392,7 @@ function vueRecherche(){
     inp.value = derniereRecherche;
     const go = () => { derniereRecherche = inp.value; document.getElementById("res").innerHTML = rechercher(inp.value); };
     inp.oninput = go; go();
+    inp.onkeydown = async ev => { if(ev.key === "Enter"){ ev.preventDefault(); inp.blur(); await essayerCode(inp.value); } };
     if(!derniereRecherche) inp.focus();
   });
   return `<h2>Recherche</h2>
@@ -502,7 +508,7 @@ function vueIntrouvable(){ return `<div class="empty">Page introuvable. <a href=
 function afficher(){
   const h = (location.hash || "#accueil").slice(1);
   const [route, ...rest] = h.split("-"); const arg = rest.join("-");
-  const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, sources: vueSources, recherche: vueRecherche, ep: () => vueEpisode(arg), direct: vueDirect};
+  const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, sources: vueSources, recherche: vueRecherche, prive: vuePrive, ep: () => vueEpisode(arg), direct: vueDirect};
   $app.innerHTML = (vues[route] || vueIntrouvable)();
   const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", }[route] ?? route;
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t === onglet));
@@ -541,6 +547,7 @@ function ouvrirPorte(){
     <div class="har">${esc(h.ar)}</div>
     <div class="hfr">${h.type.startsWith("Invocation coranique") ? esc(h.fr) : "« " + esc(h.fr) + " »"}</div>
     <div class="href">${esc(h.ref)}</div>
+    <div class="porte-annonce" id="porte-annonce" ${D.annonce ? "" : "hidden"}>${D.annonce ? `<b>Annonce</b> · ${esc(D.annonce.texte)}` : ""}</div>
     <div class="bas"><div class="infos"><span>Cours donnés à la <b>${esc(D.conf.mosquee || "mosquée")}</b><br>
       <b>${esc(hr.cours_jours || "")}</b>, ${esc((hr.cours_moment || "").replace(/^Entre/, "entre"))}<br>
       Prêche du vendredi à <b>${esc(ete ? hr.jumua_ete : hr.jumua_hiver)}</b>
@@ -550,6 +557,82 @@ function ouvrirPorte(){
   document.getElementById("entrer").onclick = fermer;
 }
 
+
+
+
+/* ---------- Annonce et espace privé (Sami, Eyoub) ---------- */
+D.annonce = null;
+async function chargerAnnonce(){
+  if(!D.api) return;
+  try{
+    const r = await fetch(D.api + "/annonce", {cache: "no-store"}); const j = await r.json();
+    D.annonce = j.annonce || null;
+    const h = (location.hash || "#accueil").slice(1);
+    if(h === "accueil" || h === "prive") afficher();
+    const p = document.getElementById("porte-annonce");
+    if(p && D.annonce) p.innerHTML = `<b>Annonce</b> · ${esc(D.annonce.texte)}`, p.hidden = false;
+  }catch(e){}
+}
+function blocAnnonce(){
+  if(!D.annonce) return "";
+  return `<div class="annonce"><span class="tag">Annonce</span><p>${esc(D.annonce.texte)}</p></div>`;
+}
+const session = {
+  get(){ return store.get("session", null); },
+  set(v){ store.set("session", v); },
+  fin(){ try{ localStorage.removeItem("session"); }catch(e){} }
+};
+async function essayerCode(texte){
+  const code = (texte || "").trim();
+  if(!D.api || code.length < 6) return false;
+  try{
+    const r = await fetch(D.api + "/connexion", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({code})});
+    const j = await r.json();
+    if(j.ok){ session.set({qui: j.qui, jeton: j.jeton}); derniereRecherche = ""; location.hash = "#prive"; return true; }
+  }catch(e){}
+  return false;
+}
+async function appelPrive(methode, corps){
+  const s = session.get(); if(!s) throw new Error("non connecté");
+  const r = await fetch(D.api + "/annonce", {method: methode, headers: {"Content-Type": "application/json", "Authorization": "Bearer " + s.jeton}, body: corps ? JSON.stringify(corps) : undefined});
+  if(r.status === 401){ session.fin(); location.hash = "#recherche"; throw new Error("Session expirée"); }
+  const j = await r.json(); if(!j.ok) throw new Error(j.erreur || "Erreur"); return j;
+}
+function vuePrive(){
+  const s = session.get();
+  if(!s){ setTimeout(() => location.hash = "#recherche"); return ""; }
+  setTimeout(() => {
+    const msg = t => document.getElementById("pmsg").textContent = t;
+    document.getElementById("publier").onclick = async () => {
+      const texte = document.getElementById("ptexte").value.trim(), fin = document.getElementById("pfin").value;
+      if(!texte){ msg("Écris d'abord l'annonce."); return; }
+      msg("Publication…");
+      try{ const j = await appelPrive("POST", {texte, fin}); D.annonce = j.annonce; afficher(); setTimeout(() => document.getElementById("pmsg").textContent = "Annonce publiée sur l'accueil."); }
+      catch(e){ msg("Échec : " + e.message + ". Vérifie la connexion internet."); }
+    };
+    const ret = document.getElementById("retirer");
+    if(ret) ret.onclick = async () => {
+      msg("Retrait…");
+      try{ await appelPrive("DELETE"); D.annonce = null; afficher(); setTimeout(() => document.getElementById("pmsg").textContent = "Annonce retirée."); }
+      catch(e){ msg("Échec : " + e.message); }
+    };
+    document.getElementById("deco").onclick = () => { session.fin(); location.hash = "#accueil"; };
+  });
+  const a = D.annonce;
+  return `<h2>Espace privé</h2>
+  <p class="muted" style="margin:-4px 0 14px">Connecté : <b>${esc(s.qui)}</b>. Seuls Sami et Eyoub voient cette page.</p>
+  <div class="card">
+    <h3>Annonce sur l'accueil</h3>
+    ${a ? `<div class="annonce" style="margin:10px 0"><p>${esc(a.texte)}</p><p class="small muted">Publiée par ${esc(a.par)}${a.fin ? ` · affichée jusqu'au ${dateFr(a.fin)} inclus` : ""}</p></div>` : `<p class="muted small" style="margin:6px 0 10px">Aucune annonce affichée en ce moment.</p>`}
+    <label class="small muted" for="ptexte">Nouvelle annonce</label>
+    <textarea id="ptexte" rows="3" maxlength="500" placeholder="Exemple : Pas de cours ce mardi. Reprise jeudi après Maghrib." style="width:100%;margin:6px 0 10px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px"></textarea>
+    <label class="small muted" for="pfin">Afficher jusqu'au (facultatif)</label>
+    <input id="pfin" type="date" style="display:block;width:100%;margin:6px 0 4px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
+    <div class="btns"><button class="btn gold" id="publier">Publier</button>${a ? '<button class="btn line" id="retirer">Retirer l\'annonce</button>' : ""}</div>
+    <p id="pmsg" class="small" style="margin-top:10px;color:var(--gold)"></p>
+  </div>
+  <div class="btns"><button class="btn line" id="deco">Se déconnecter de ce téléphone</button></div>`;
+}
 
 /* ---------- Comptage anonyme (GoatCounter) : aucun nom, aucun cookie, aucune adresse IP conservée ---------- */
 const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
@@ -579,14 +662,15 @@ async function charger(nom, defaut){
   try{ const r = await fetch("data/" + nom, {cache: "no-cache"}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return defaut; }
 }
 (async () => {
-  const [ser, eps, conf, textes, pdfs] = await Promise.all([charger("series.json", {themes: [], series: []}), charger("episodes.json", []), charger("config.json", {}), charger("textes.json", {}), charger("pdfs.json", [])]);
-  D.themes = ser.themes; D.series = ser.series; D.eps = eps; D.conf = conf; D.textes = textes || {}; D.pdfs = new Set(pdfs || []);
+  const [ser, eps, conf, textes, pdfs, api] = await Promise.all([charger("series.json", {themes: [], series: []}), charger("episodes.json", []), charger("config.json", {}), charger("textes.json", {}), charger("pdfs.json", []), charger("api.json", {})]);
+  D.themes = ser.themes; D.series = ser.series; D.eps = eps; D.conf = conf; D.textes = textes || {}; D.pdfs = new Set(pdfs || []); D.api = (api && api.url) || "";
   D.series.forEach(s => D.serie.set(s.id, s));
   D.eps = D.eps.filter(e => D.serie.has(e.serie));
   D.eps.forEach(e => { D.byId.set(e.id, e); if(!D.bySerie.has(e.serie)) D.bySerie.set(e.serie, []); D.bySerie.get(e.serie).push(e); });
   if(!D.eps.length){ $app.innerHTML = '<div class="empty">Impossible de charger les cours. Vérifie ta connexion.</div>'; return; }
   ouvrirPorte();
   afficher();
+  chargerAnnonce();
   compter(STANDALONE ? "/ouverture/appli-installee" : "/ouverture/navigateur", STANDALONE ? "Ouverture depuis l'icône" : "Ouverture dans le navigateur");
 })();
 if("serviceWorker" in navigator && location.protocol === "https:" && !/claude|anthropic/.test(location.hostname)){

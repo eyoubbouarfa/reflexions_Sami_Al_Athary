@@ -1,0 +1,70 @@
+name: Mise en ligne du serveur
+
+on:
+  push:
+    paths: ["serveur/**", ".github/workflows/serveur.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: 688d78596bf9a1d3ebcf05233f727718
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  NOM: reflexions-sami
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Espace de stockage des annonces
+        id: kv
+        run: |
+          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
+          ID=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API/storage/kv/namespaces?per_page=100" | jq -r '.result[] | select(.title=="reflexions-sami-annonces") | .id')
+          if [ -z "$ID" ]; then
+            ID=$(curl -s -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+              -d '{"title":"reflexions-sami-annonces"}' "$API/storage/kv/namespaces" | jq -r '.result.id')
+          fi
+          test -n "$ID" && test "$ID" != "null"
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+      - name: Adresse workers.dev
+        id: sous
+        run: |
+          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"
+          S=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API" | jq -r '.result.subdomain // empty')
+          if [ -z "$S" ]; then
+            S=$(curl -s -X PUT -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+              -d '{"subdomain":"reflexions-sami"}' "$API" | jq -r '.result.subdomain // empty')
+          fi
+          test -n "$S"
+          echo "sub=$S" >> "$GITHUB_OUTPUT"
+      - name: Déployer
+        working-directory: serveur
+        run: |
+          cat > wrangler.toml <<TOML
+          name = "$NOM"
+          main = "worker.js"
+          compatibility_date = "2026-11-01"
+          account_id = "$CLOUDFLARE_ACCOUNT_ID"
+          workers_dev = true
+          [[kv_namespaces]]
+          binding = "KV"
+          id = "${{ steps.kv.outputs.id }}"
+          TOML
+          npx --yes wrangler@4 deploy
+          printf '%s' "${{ secrets.CODE_SAMI }}" | npx --yes wrangler@4 secret put CODE_SAMI
+          printf '%s' "${{ secrets.CODE_EYOUB }}" | npx --yes wrangler@4 secret put CODE_EYOUB
+      - name: Vérifier et publier l'adresse du serveur
+        run: |
+          URL="https://$NOM.${{ steps.sous.outputs.sub }}.workers.dev"
+          for i in 1 2 3 4 5 6; do curl -sf "$URL/annonce" && break; sleep 10; done
+          echo "{\"url\": \"$URL\"}" > data/api.json
+          git config user.name "Eyoub Bouarfa"
+          git config user.email "eyoubbouarfa@users.noreply.github.com"
+          git add data/api.json
+          git diff --cached --quiet || (git commit -m "Adresse du serveur" && git pull --rebase && git push)
