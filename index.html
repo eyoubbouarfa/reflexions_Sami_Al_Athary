@@ -270,7 +270,8 @@ function vueAccueil(){
   ${vueProgramme()}
   <h2>Derniers cours publiés</h2>
   <div class="list">${recents.map(e => ligneEp(e, true)).join("")}</div>
-  <footer>${D.eps.length} cours et prêches classés · <a href="${esc(D.conf.telegram)}">Canal Telegram</a></footer>`;
+  <footer>${D.eps.length} cours et prêches classés · <a href="${esc(D.conf.telegram)}">Canal Telegram</a>
+  <br><span style="font-size:11px">Comptage anonyme des visites : aucun nom, aucun cookie, aucune adresse IP conservée.</span></footer>`;
 }
 
 function programmeReel(){
@@ -509,7 +510,7 @@ function afficher(){
 }
 let derniereRoute = "";
 window.addEventListener("hashchange", () => {
-  afficher();
+  afficher(); compterVue();
   const r = location.hash.split("-")[0];
   if(r !== derniereRoute || r === "#ep") window.scrollTo(0, 0);
   derniereRoute = r;
@@ -545,9 +546,33 @@ function ouvrirPorte(){
       Prêche du vendredi à <b>${esc(ete ? hr.jumua_ete : hr.jumua_hiver)}</b>
       ${D.conf.adresse ? `<span class="adr">${esc(D.conf.adresse)}</span>` : ""}</span></div>
     <button class="entrer" id="entrer" aria-label="Entrer"><span class="ring"><i></i></span><span class="lettres">ENTRER</span></button></div>`;
-  const fermer = () => { el.classList.add("out"); setTimeout(() => el.remove(), 550); };
+  const fermer = () => { el.classList.add("out"); setTimeout(() => el.remove(), 550); compter("/entrer", "Bouton Entrer", true); };
   document.getElementById("entrer").onclick = fermer;
 }
+
+
+/* ---------- Comptage anonyme (GoatCounter) : aucun nom, aucun cookie, aucune adresse IP conservée ---------- */
+const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+function compter(chemin, titre, evenement){
+  try{
+    const code = D.conf.goatcounter; if(!code || !navigator.onLine || /localhost|claude/.test(location.hostname)) return;
+    const q = new URLSearchParams({p: chemin, t: titre || chemin, s: [screen.width, screen.height, devicePixelRatio || 1].join(","), rnd: Math.random().toString(36).slice(2)});
+    if(evenement) q.set("e", "true");
+    new Image().src = `https://${code}.goatcounter.com/count?` + q.toString();
+  }catch(e){}
+}
+function compterVue(){
+  const h = (location.hash || "#accueil").slice(1), [route, ...r] = h.split("-"), arg = r.join("-");
+  if(route === "ep"){ const e = D.byId.get(+arg); if(e){ const s = D.serie.get(e.serie); compter(`/cours/${s.id}/${e.num ?? e.id}`, `${s.nom} · ${e.num != null ? "n° " + e.num : titreEp(e)}`); } return; }
+  if(route === "serie"){ const s = D.serie.get(arg); if(s) compter(`/serie/${s.id}`, s.nom); return; }
+  if(route === "theme"){ compter(`/theme/${arg}`, `Thème : ${arg}`); return; }
+  compter(`/onglet/${route}`, `Onglet ${route}`);
+}
+document.addEventListener("click", ev => {
+  const a = ev.target.closest("a"); if(!a) return;
+  if(/\/pdf\//.test(a.getAttribute("href") || "")) compter("pdf-" + a.getAttribute("href").split("/").pop(), "Téléchargement PDF", true);
+  else if(/soundcloud|t\.me/.test(a.href) && /Écouter|SoundCloud/.test(a.textContent)) compter("ecoute-" + (location.hash.split("-")[1] || ""), "Écoute d'un cours", true);
+});
 
 /* ---------- chargement ---------- */
 async function charger(nom, defaut){
@@ -562,6 +587,7 @@ async function charger(nom, defaut){
   if(!D.eps.length){ $app.innerHTML = '<div class="empty">Impossible de charger les cours. Vérifie ta connexion.</div>'; return; }
   ouvrirPorte();
   afficher();
+  compter(STANDALONE ? "/ouverture/appli-installee" : "/ouverture/navigateur", STANDALONE ? "Ouverture depuis l'icône" : "Ouverture dans le navigateur");
 })();
 if("serviceWorker" in navigator && location.protocol === "https:" && !/claude|anthropic/.test(location.hostname)){
   navigator.serviceWorker.register("sw.js").catch(() => {});
