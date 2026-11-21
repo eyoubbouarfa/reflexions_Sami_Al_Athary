@@ -24,7 +24,7 @@ jobs:
           path: ~/.cache/huggingface
           key: whisper-medium
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - run: pip install faster-whisper yt-dlp reportlab matplotlib
+      - run: pip install faster-whisper "av<15" yt-dlp reportlab matplotlib
       - name: Transcrire (français seulement)
         run: python outils/transcrire_ci.py ${{ inputs.ids }}
       - name: Construire les PDF
