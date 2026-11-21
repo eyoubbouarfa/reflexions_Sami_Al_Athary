@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sami al Athary · Cours</title>
+<meta name="description" content="Cours, prêches et rappels du frère Sami al Athary, classés par thème et par livre étudié.">
+<meta name="theme-color" content="#0E3B2C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F8F5; --surface:#FFFFFF; --ink:#11261D; --muted:#5D6F66; --line:#DCE6DF;
+  --green:#0E3B2C; --green-2:#14523D; --gold:#A8833F; --gold-2:#C9A45E; --gold-soft:#F5EDDB; --ok:#1F7A4A;
+  --night:var(--green);
+  --display:"Cormorant Garamond",Georgia,serif; --body:"Inter",system-ui,sans-serif; --ar:"Amiri","Traditional Arabic",serif;
+  --r:14px; --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#09160F; --surface:#10221A; --ink:#EEF3EF; --muted:#9DB0A6; --line:#1E3529; --gold:#D2AF6B; --gold-soft:#1D2B20; --green:#0B2E22;
+}}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);min-height:100vh;padding-bottom:calc(74px + var(--safe-b))}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit}
+.ar{font-family:var(--ar);direction:rtl}
+header.top{background:var(--green);color:#fff;border-bottom:2px solid var(--gold-2);padding:calc(14px + var(--safe-t)) 18px 14px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:5}
+header.top img{width:42px;height:42px;border-radius:50%;box-shadow:0 0 0 1.5px var(--gold-2)}
+header.top h1{font:600 21px/1.1 var(--display);letter-spacing:.3px}
+header.top small{display:block;font:500 11px var(--body);color:var(--gold-2);letter-spacing:1.4px;text-transform:uppercase;margin-top:2px}
+header.top .back{width:36px;height:36px;border-radius:50%;display:none;place-items:center;background:rgba(255,255,255,.12);font-size:20px;flex:none}
+header.top.sub .back{display:grid}
+main{max-width:760px;margin:0 auto;padding:16px}
+h2{font:600 24px/1.2 var(--display);margin:22px 0 10px}
+h2:first-child{margin-top:4px}
+h3{font:600 19px/1.25 var(--display)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;text-align:left;width:100%;text-decoration:none}
+.row:active{transform:scale(.99)}
+.row .num{flex:none;min-width:40px;height:40px;border-radius:10px;background:var(--gold-soft);color:var(--gold);display:grid;place-items:center;font:700 15px var(--body);padding:0 6px}
+.row .txt{flex:1;min-width:0}
+.row .t1{font-weight:600;line-height:1.3}
+.row .t2{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .chev{color:var(--muted);flex:none}
+.row.done .num{background:transparent;border:1.5px solid var(--ok);color:var(--ok)}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--gold-soft);color:var(--gold)}
+.hero .tag{background:rgba(201,164,94,.18);color:var(--gold-2)}
+.tag.live{background:#B3261E;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.theme{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;text-align:left;min-height:108px;display:flex;flex-direction:column;justify-content:space-between}
+.theme .ar{font-size:20px;color:var(--gold);text-align:right}
+.theme b{font:600 18px/1.2 var(--display)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:500;white-space:nowrap}
+.chip.on{background:var(--green);color:#fff;border-color:var(--green)}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 12px;margin-bottom:12px}
+.search input{flex:1;border:0;background:none;font:inherit;color:inherit;padding:12px 0;outline:none;font-size:16px}
+.bar{height:5px;border-radius:9px;background:var(--line);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-2))}
+.hero{background:linear-gradient(150deg,var(--green) 0%,var(--green-2) 100%);color:#fff;border:1px solid rgba(201,164,94,.45);border-radius:18px;padding:20px;position:relative;overflow:hidden}
+.hero h3{color:#fff;font-size:22px;margin:6px 0 4px}
+.hero p{color:#CFE0D6;font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:12px;font-weight:600;background:var(--green);color:#fff;text-decoration:none;font-size:14px}
+.btn.gold{background:linear-gradient(180deg,var(--gold-2),var(--gold));color:#fff}
+.btn.line{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.player{border:0;width:100%;height:166px;border-radius:12px;margin-top:14px;background:var(--gold-soft)}
+.notes{font-size:16px;line-height:1.7}
+.notes h4{font:600 20px var(--display);margin:18px 0 6px}
+.notes p{margin:8px 0}
+.notes .ar{font-size:22px;line-height:1.9;margin:10px 0;padding:10px 14px;background:var(--gold-soft);border-radius:10px;text-align:right}
+.notes figure{margin:14px 0}.notes figure img,.notes figure svg{width:100%;border-radius:10px}
+mark{background:#F1DFAF;color:#11261D;border-radius:3px;padding:0 2px}
+.empty{text-align:center;padding:28px 12px;color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:6px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;padding:6px 4px calc(6px + var(--safe-b));z-index:6}
+nav.tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:500;color:var(--muted);text-decoration:none;padding:4px 0}
+nav.tabs a svg{width:23px;height:23px}
+nav.tabs a.on{color:var(--green)}
+@media (prefers-color-scheme:dark){nav.tabs a.on{color:var(--gold)}}
+nav.tabs a .dot{width:7px;height:7px;border-radius:50%;background:#B3261E;position:absolute;margin-left:14px;display:none}
+nav.tabs a.live .dot{display:block}
+.more{display:block;margin:12px auto 0;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600}
+footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
+@media print{
+  header.top,nav.tabs,.btns,.noprint{display:none!important}
+  body{background:#fff;color:#000;padding:0}
+  .card{border:0;padding:0}
+  .notes .ar{background:#f4efe4}
+}
+</style>
+</head>
+<body>
+<header class="top" id="top">
+  <button class="back" onclick="history.back()" aria-label="Retour">‹</button>
+  <img src="icons/logo.png" alt="">
+  <div><h1>Sami al Athary</h1><small>Science · Rappels · Bénéfices</small></div>
+</header>
+<main id="app"><p class="empty">Chargement des cours…</p></main>
+<nav class="tabs" id="tabs">
+  <a href="#accueil" data-t="accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Accueil</a>
+  <a href="#themes" data-t="themes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h6v14H4zM14 5h6v14h-6z"/><path d="M6 9h2M16 9h2"/></svg>Thèmes</a>
+  <a href="#preches" data-t="preches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M5 21V11a7 7 0 0 1 14 0v10M3 21h18M9 21v-5a3 3 0 0 1 6 0v5"/></svg>Vendredi</a>
+  <a href="#recherche" data-t="recherche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>Recherche</a>
+  <a href="#direct" data-t="direct"><span class="dot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></svg>Direct</a>
+</nav>
+<script>
+"use strict";
+const D = {themes:[], series:[], eps:[], conf:{}, textes:{}, byId:new Map(), bySerie:new Map(), serie:new Map()};
+const $app = document.getElementById("app");
+
+/* ---------- mémoire locale : cours écoutés ---------- */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d }catch(e){ return d } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)) }catch(e){} }
+};
+let ecoutes = new Set(store.get("ecoutes", []));
+function basculerEcoute(id){ ecoutes.has(id) ? ecoutes.delete(id) : ecoutes.add(id); store.set("ecoutes", [...ecoutes]); }
+
+/* ---------- utilitaires ---------- */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[ً-ٰٟ]/g, "").toLowerCase().replace(/[’']/g, "'");
+const chev = '<span class="chev">›</span>';
+function titreEp(e){
+  const s = D.serie.get(e.serie);
+  return e.titre || (e.num != null ? `Épisode ${e.num}` : s.nom);
+}
+function ligneEp(e, avecSerie){
+  const s = D.serie.get(e.serie);
+  const sous = avecSerie ? s.nom : [e.fin ? "Dernier épisode" : "", D.textes[e.id] ? "Notes disponibles" : ""].filter(Boolean).join(" · ");
+  return `<a class="row ${ecoutes.has(e.id) ? "done" : ""}" href="#ep-${e.id}">
+    <span class="num">${e.num != null ? e.num : "•"}</span>
+    <span class="txt"><span class="t1">${esc(titreEp(e))}</span>${sous ? `<span class="t2" style="display:block">${esc(sous)}</span>` : ""}</span>${chev}</a>`;
+}
+function progression(sid){
+  const eps = D.bySerie.get(sid) || [];
+  const n = eps.filter(e => ecoutes.has(e.id)).length;
+  return {n, total: eps.length, pct: eps.length ? Math.round(100 * n / eps.length) : 0};
+}
+function prochainEp(sid){
+  const eps = [...(D.bySerie.get(sid) || [])].sort(ordreSerie);
+  return eps.find(e => !ecoutes.has(e.id)) || eps[eps.length - 1];
+}
+const ordreSerie = (a, b) => (a.num ?? 1e9) - (b.num ?? 1e9) || a.id - b.id;
+function lot(items, rendu, taille = 40){
+  // affiche une longue liste par paquets
+  const id = "l" + Math.random().toString(36).slice(2);
+  setTimeout(() => {
+    const box = document.getElementById(id); if(!box) return;
+    let i = 0;
+    const plus = () => {
+      box.insertAdjacentHTML("beforeend", items.slice(i, i + taille).map(rendu).join(""));
+      i += taille;
+      const b = box.nextElementSibling;
+      if(i >= items.length && b && b.classList.contains("more")) b.remove();
+    };
+    plus();
+    const b = box.nextElementSibling; if(b) b.onclick = plus;
+  });
+  return `<div class="list" id="${id}"></div>${items.length > taille ? '<button class="more">Afficher plus</button>' : ""}`;
+}
+
+/* ---------- vues ---------- */
+function vueAccueil(){
+  const live = D.conf.direct && D.conf.direct.actif;
+  const recents = D.eps.slice(0, 8);
+  const enCours = D.series.filter(s => s.statut === "en cours" && s.type === "cours");
+  const vendredi = D.eps.find(e => D.serie.get(e.serie).type === "preche");
+  return `
+  ${live ? `<a class="hero" href="#direct" style="display:block;text-decoration:none;margin-bottom:14px">
+      <span class="tag live">En direct</span><h3>${esc(D.conf.direct.titre || "Cours en direct")}</h3><p>Rejoindre maintenant</p></a>` : ""}
+  ${vendredi ? `<div class="hero">
+      <span class="tag">Dernier prêche du vendredi</span>
+      <h3>${esc(titreEp(vendredi))}</h3>
+      <p>${esc(D.serie.get(vendredi.serie).nom)}${vendredi.num != null ? " · n° " + vendredi.num : ""}</p>
+      <div class="btns"><a class="btn gold" href="#ep-${vendredi.id}">Écouter</a><a class="btn line" style="color:#fff;border-color:rgba(255,255,255,.3)" href="#preches">Tous les prêches</a></div>
+    </div>` : ""}
+  <h2>Livres en cours d'étude</h2>
+  <div class="list">${enCours.map(s => {
+    const p = progression(s.id), nx = prochainEp(s.id);
+    const dernier = (D.bySerie.get(s.id) || [])[0];
+    const info = p.n ? (nx ? `reprendre au n° ${nx.num ?? "?"}` : "") : (dernier && dernier.num != null ? `dernier cours : n° ${dernier.num}` : "");
+    return `<a class="row" href="#serie-${s.id}" style="align-items:flex-start">
+      <span class="txt"><span class="t1">${esc(s.nom)}</span>
+      <span class="t2" style="display:block">${[s.auteur, info].filter(Boolean).map(esc).join(" · ")}</span>
+      ${p.n ? `<span class="bar"><i style="width:${p.pct}%"></i></span>` : ""}</span>${chev}</a>`;
+  }).join("")}</div>
+  <h2>Derniers cours publiés</h2>
+  <div class="list">${recents.map(e => ligneEp(e, true)).join("")}</div>
+  <footer>${D.eps.length} cours et prêches classés · <a href="${esc(D.conf.telegram)}">Canal Telegram</a></footer>`;
+}
+
+function vueThemes(){
+  return `<h2>Thèmes</h2>
+  <div class="grid">${D.themes.filter(t => t.id !== "preches").map(t => {
+    const ss = D.series.filter(s => s.theme === t.id);
+    const n = ss.reduce((a, s) => a + s.nb, 0);
+    if(!n) return "";
+    return `<a class="theme" href="#theme-${t.id}" style="text-decoration:none"><span class="ar">${esc(t.ar)}</span>
+      <span><b>${esc(t.nom)}</b><br><span class="muted small">${ss.length} livre${ss.length > 1 ? "s" : ""} · ${n} cours</span></span></a>`;
+  }).join("")}</div>`;
+}
+
+function carteSerie(s){
+  const p = progression(s.id);
+  return `<a class="row" href="#serie-${s.id}" style="align-items:flex-start">
+    <span class="txt"><span class="t1">${esc(s.nom)}</span>
+    ${s.livre ? `<span class="ar" style="display:block;color:var(--gold);font-size:17px;text-align:left">${esc(s.livre)}</span>` : ""}
+    <span class="t2" style="display:block">${[s.auteur, s.nb + " cours", s.statut === "en cours" ? "en cours" : "terminé"].filter(Boolean).map(esc).join(" · ")}</span>
+    ${p.n ? `<span class="bar"><i style="width:${p.pct}%"></i></span>` : ""}</span>${chev}</a>`;
+}
+
+function vueTheme(id){
+  const t = D.themes.find(x => x.id === id); if(!t) return vueIntrouvable();
+  const ss = D.series.filter(s => s.theme === id).sort((a, b) => (a.statut === "en cours" ? -1 : 1) - (b.statut === "en cours" ? -1 : 1) || b.nb - a.nb);
+  return `<h2>${esc(t.nom)}</h2><p class="ar" style="color:var(--gold);font-size:20px;margin:-6px 0 12px;text-align:left">${esc(t.ar)}</p>
+  <div class="list">${ss.map(carteSerie).join("")}</div>`;
+}
+
+function vueSerie(id){
+  const s = D.serie.get(id); if(!s) return vueIntrouvable();
+  const eps = [...(D.bySerie.get(id) || [])].sort(ordreSerie);
+  const p = progression(id), nx = prochainEp(id);
+  setTimeout(() => {
+    const inp = document.getElementById("fs");
+    if(inp) inp.oninput = () => {
+      const q = norm(inp.value.trim());
+      const res = !q ? eps : eps.filter(e => norm(titreEp(e) + " " + (e.num ?? "")).includes(q) || norm(D.textes[e.id] && D.textes[e.id].texte).includes(q));
+      document.getElementById("fl").innerHTML = res.map(e => ligneEp(e)).join("") || '<p class="empty">Aucun épisode</p>';
+    };
+  });
+  return `<div class="card">
+    <span class="tag">${esc(D.themes.find(t => t.id === s.theme).nom)}</span>
+    <h2 style="margin:8px 0 2px">${esc(s.nom)}</h2>
+    ${s.livre ? `<p class="ar" style="color:var(--gold);font-size:21px;text-align:left">${esc(s.livre)}</p>` : ""}
+    <div class="meta">${s.auteur ? `<span>${esc(s.auteur)}</span>` : ""}<span>${s.nb} cours</span><span>${s.statut === "en cours" ? "En cours" : "Terminé"}</span><span>${p.n} écouté${p.n > 1 ? "s" : ""}</span></div>
+    <div class="bar"><i style="width:${p.pct}%"></i></div>
+    <div class="btns">
+      ${nx ? `<a class="btn gold" href="#ep-${nx.id}">${p.n ? "Reprendre" : "Commencer"}${nx.num != null ? " · n° " + nx.num : ""}</a>` : ""}
+      ${s.support ? `<a class="btn line" href="${esc(s.support)}">Support du livre</a>` : `<span class="btn line" style="opacity:.55">Support du livre bientôt</span>`}
+    </div>
+  </div>
+  <h2>Épisodes</h2>
+  <div class="search"><span class="muted">⌕</span><input id="fs" placeholder="Filtrer : chapitre, sourate, n° de hadith…" autocomplete="off"></div>
+  <div class="list" id="fl">${eps.map(e => ligneEp(e)).join("")}</div>`;
+}
+
+let filtrePreche = "tous";
+function vuePreches(){
+  const ss = D.series.filter(s => s.type === "preche");
+  const eps = D.eps.filter(e => D.serie.get(e.serie).type === "preche" && (filtrePreche === "tous" || e.serie === filtrePreche));
+  setTimeout(() => document.querySelectorAll(".chip[data-f]").forEach(c => c.onclick = () => { filtrePreche = c.dataset.f; afficher(); }));
+  return `<h2>Prêches du vendredi</h2>
+  <p class="muted small" style="margin:-4px 0 12px">Les prêches suivent leurs propres cycles, différents des cours de la semaine.</p>
+  <div class="chips"><button class="chip ${filtrePreche === "tous" ? "on" : ""}" data-f="tous">Tous</button>
+  ${ss.map(s => `<button class="chip ${filtrePreche === s.id ? "on" : ""}" data-f="${s.id}">${esc(s.nom)} (${s.nb})</button>`).join("")}</div>
+  ${lot(eps, e => ligneEp(e, filtrePreche === "tous"))}`;
+}
+
+let derniereRecherche = "";
+function vueRecherche(){
+  const nbTextes = Object.keys(D.textes).length;
+  setTimeout(() => {
+    const inp = document.getElementById("q");
+    inp.value = derniereRecherche;
+    const go = () => { derniereRecherche = inp.value; document.getElementById("res").innerHTML = rechercher(inp.value); };
+    inp.oninput = go; go();
+    if(!derniereRecherche) inp.focus();
+  });
+  return `<h2>Recherche</h2>
+  <div class="search"><span class="muted">⌕</span><input id="q" type="search" placeholder="Un mot, une phrase, un compagnon, une sourate…" autocomplete="off" enterkeyhint="search"></div>
+  <p class="muted small" style="margin:-4px 0 12px">Recherche dans les titres des ${D.eps.length} cours${nbTextes ? ` et dans le contenu des ${nbTextes} cours transcrits` : ". Le contenu des cours sera cherchable au fur et à mesure de leur transcription"}.</p>
+  <div id="res"></div>`;
+}
+function surligner(txt, mots){
+  // surlignage insensible aux accents : on cherche dans le texte normalisé, on marque dans le texte d'origine
+  const src = [...String(txt ?? "")];
+  let n = "", carte = [];
+  src.forEach((c, i) => { const k = norm(c); for(const _ of k){ n += _; carte.push(i); } });
+  const marque = new Array(src.length).fill(false);
+  mots.filter(m => m.length >= 2).forEach(m => {
+    let p = 0, i;
+    while((i = n.indexOf(m, p)) !== -1){ for(let j = i; j < i + m.length; j++) marque[carte[j]] = true; p = i + m.length; }
+  });
+  let h = "", ouvert = false;
+  src.forEach((c, i) => {
+    if(marque[i] && !ouvert){ h += "<mark>"; ouvert = true; }
+    if(!marque[i] && ouvert){ h += "</mark>"; ouvert = false; }
+    h += esc(c);
+  });
+  return h + (ouvert ? "</mark>" : "");
+}
+function extrait(texte, q){
+  const n = norm(texte), i = n.indexOf(q);
+  if(i < 0) return "";
+  const a = Math.max(0, i - 70), b = Math.min(texte.length, i + q.length + 90);
+  return (a ? "…" : "") + texte.slice(a, b) + (b < texte.length ? "…" : "");
+}
+function rechercher(brut){
+  const q = norm(brut.trim());
+  if(q.length < 2) return `<div class="empty">Tape au moins deux lettres.<br><span class="small">Exemples : « Omar », « witr », « hypocrites », « Al Kahf », « purification ».</span></div>`;
+  const mots = q.split(/\s+/).filter(Boolean);
+  const res = [];
+  for(const e of D.eps){
+    const s = D.serie.get(e.serie);
+    const titre = titreEp(e);
+    const meta = norm([titre, s.nom, s.livre, s.auteur, e.num].join(" "));
+    const texte = D.textes[e.id] ? D.textes[e.id].texte : "";
+    const tn = norm(texte);
+    let score = 0, ext = "";
+    if(meta.includes(q)) score += 10;
+    else if(mots.every(m => meta.includes(m))) score += 6;
+    if(texte){
+      if(tn.includes(q)){ score += 8; ext = extrait(texte, q); }
+      else if(mots.every(m => tn.includes(m))){ score += 3; ext = extrait(texte, mots[0]); }
+    }
+    if(score) res.push({e, s, score, ext, titre});
+  }
+  if(!res.length) return `<div class="empty">Aucun cours trouvé pour « ${esc(brut)} ».</div>`;
+  res.sort((a, b) => b.score - a.score || b.e.id - a.e.id);
+  return `<p class="muted small" style="margin-bottom:8px">${res.length} résultat${res.length > 1 ? "s" : ""}</p>` + lot(res, r => `
+    <a class="row" href="#ep-${r.e.id}" style="align-items:flex-start"><span class="num">${r.e.num ?? "•"}</span>
+    <span class="txt"><span class="t1">${surligner(r.titre, [q, ...mots])}</span>
+    <span class="t2" style="display:block">${surligner(r.s.nom, [q, ...mots])}</span>
+    ${r.ext ? `<span class="small" style="display:block;margin-top:4px">${surligner(r.ext, [q, ...mots])}</span>` : ""}</span>${chev}</a>`, 30);
+}
+
+function vueEpisode(id){
+  const e = D.byId.get(+id); if(!e) return vueIntrouvable();
+  const s = D.serie.get(e.serie);
+  const freres = [...D.bySerie.get(e.serie)].sort(ordreSerie);
+  const i = freres.indexOf(e), prec = freres[i - 1], suiv = freres[i + 1];
+  const t = D.textes[e.id];
+  const sc = /^https:\/\/soundcloud\.com\//.test(e.audio);
+  setTimeout(() => {
+    const b = document.getElementById("ecoute");
+    if(b) b.onclick = () => { basculerEcoute(e.id); afficher(); };
+    const p = document.getElementById("pdf");
+    if(p) p.onclick = () => { try{ window.print() }catch(err){} };
+  });
+  return `<div class="card">
+    <a class="tag" href="#serie-${s.id}" style="text-decoration:none">${esc(s.nom)}</a>
+    <h2 style="margin:10px 0 4px">${e.num != null && e.titre ? `<span class="muted">n° ${e.num} · </span>` : ""}${esc(titreEp(e))}</h2>
+    <div class="meta">${s.auteur ? `<span>${esc(s.auteur)}</span>` : ""}${e.fin ? "<span>Dernier épisode de la série</span>" : ""}${s.type === "preche" ? "<span>Prêche du vendredi</span>" : ""}</div>
+    ${sc ? `<iframe class="player noprint" loading="lazy" allow="autoplay" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(e.audio)}&color=%239c7a42&visual=false&show_comments=false&show_teaser=false"></iframe>` : ""}
+    <div class="btns">
+      <a class="btn gold" href="${esc(e.audio)}" target="_blank" rel="noopener">${sc ? "Ouvrir dans SoundCloud" : "Écouter"}</a>
+      <button class="btn line" id="ecoute">${ecoutes.has(e.id) ? "✓ Écouté" : "Marquer comme écouté"}</button>
+      ${t ? '<button class="btn line" id="pdf">Télécharger en PDF</button>' : ""}
+    </div>
+  </div>
+  <h2>Notes du cours</h2>
+  ${t ? `<div class="card notes">${t.html}</div>` : `<div class="card empty" style="text-align:left">Les notes de ce cours ne sont pas encore disponibles. Elles sont publiées après relecture par l'enseignant.</div>`}
+  <div class="btns noprint" style="justify-content:space-between">
+    ${prec ? `<a class="btn line" href="#ep-${prec.id}">‹ ${prec.num != null ? "n° " + prec.num : "Précédent"}</a>` : "<span></span>"}
+    ${suiv ? `<a class="btn line" href="#ep-${suiv.id}">${suiv.num != null ? "n° " + suiv.num : "Suivant"} ›</a>` : ""}
+  </div>
+  <footer><a href="${esc(e.post)}" target="_blank" rel="noopener">Voir la publication sur Telegram</a></footer>`;
+}
+
+function vueDirect(){
+  const d = D.conf.direct || {};
+  if(d.actif && d.lien){
+    const yt = (d.lien.match(/(?:youtu\.be\/|v=|live\/)([\w-]{11})/) || [])[1];
+    return `<h2><span class="tag live">En direct</span> ${esc(d.titre || "Cours en direct")}</h2>
+      ${yt ? `<iframe style="width:100%;aspect-ratio:16/9;border:0;border-radius:14px;background:#000" src="https://www.youtube.com/embed/${yt}?autoplay=1" allow="autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>` : ""}
+      <div class="btns"><a class="btn gold" href="${esc(d.lien)}" target="_blank" rel="noopener">Ouvrir le direct</a></div>`;
+  }
+  return `<h2>Direct</h2>
+  <div class="card"><h3>Pas de cours en direct pour le moment</h3>
+  <p class="muted" style="margin-top:6px">${esc(d.prochain || "")}</p>
+  <div class="meta" style="margin-top:12px"><span>Cours de la semaine : mardi, jeudi et dimanche</span><span>Prêche : vendredi</span></div>
+  <div class="btns"><a class="btn line" href="${esc(D.conf.telegram)}" target="_blank" rel="noopener">Canal Telegram</a></div></div>`;
+}
+
+function vueIntrouvable(){ return `<div class="empty">Page introuvable. <a href="#accueil">Retour à l'accueil</a></div>`; }
+
+/* ---------- navigation ---------- */
+function afficher(){
+  const h = (location.hash || "#accueil").slice(1);
+  const [route, ...rest] = h.split("-"); const arg = rest.join("-");
+  const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, recherche: vueRecherche, ep: () => vueEpisode(arg), direct: vueDirect};
+  $app.innerHTML = (vues[route] || vueIntrouvable)();
+  const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", }[route] ?? route;
+  document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t === onglet));
+  document.getElementById("top").classList.toggle("sub", !["accueil", "themes", "preches", "recherche", "direct"].includes(route));
+  document.querySelector('#tabs a[data-t="direct"]').classList.toggle("live", !!(D.conf.direct && D.conf.direct.actif));
+}
+let derniereRoute = "";
+window.addEventListener("hashchange", () => {
+  afficher();
+  const r = location.hash.split("-")[0];
+  if(r !== derniereRoute || r === "#ep") window.scrollTo(0, 0);
+  derniereRoute = r;
+});
+
+/* ---------- chargement ---------- */
+async function charger(nom, defaut){
+  try{ const r = await fetch("data/" + nom, {cache: "no-cache"}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return defaut; }
+}
+(async () => {
+  const [ser, eps, conf, textes] = await Promise.all([charger("series.json", {themes: [], series: []}), charger("episodes.json", []), charger("config.json", {}), charger("textes.json", {})]);
+  D.themes = ser.themes; D.series = ser.series; D.eps = eps; D.conf = conf; D.textes = textes || {};
+  D.series.forEach(s => D.serie.set(s.id, s));
+  D.eps = D.eps.filter(e => D.serie.has(e.serie));
+  D.eps.forEach(e => { D.byId.set(e.id, e); if(!D.bySerie.has(e.serie)) D.bySerie.set(e.serie, []); D.bySerie.get(e.serie).push(e); });
+  if(!D.eps.length){ $app.innerHTML = '<div class="empty">Impossible de charger les cours. Vérifie ta connexion.</div>'; return; }
+  afficher();
+})();
+if("serviceWorker" in navigator && location.protocol === "https:" && !/claude|anthropic/.test(location.hostname)){
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>

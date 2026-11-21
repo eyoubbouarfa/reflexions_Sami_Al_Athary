@@ -1,0 +1,16 @@
+{
+  "name": "Sami al Athary · Cours",
+  "short_name": "Sami al Athary",
+  "description": "Cours, prêches et rappels du frère Sami al Athary, classés par thème et par livre étudié.",
+  "lang": "fr",
+  "start_url": "./#accueil",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E3B2C",
+  "theme_color": "#0E3B2C",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

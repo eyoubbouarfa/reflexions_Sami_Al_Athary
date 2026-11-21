@@ -1,0 +1,436 @@
+{
+ "themes": [
+  {
+   "id": "aqida",
+   "nom": "Croyance et unicité",
+   "ar": "العقيدة والتوحيد"
+  },
+  {
+   "id": "hadith",
+   "nom": "Hadith",
+   "ar": "الحديث"
+  },
+  {
+   "id": "fiqh",
+   "nom": "Jurisprudence",
+   "ar": "الفقه"
+  },
+  {
+   "id": "sira",
+   "nom": "Biographie du Prophète ﷺ",
+   "ar": "السيرة النبوية"
+  },
+  {
+   "id": "coran",
+   "nom": "Coran et exégèse",
+   "ar": "القرآن والتفسير"
+  },
+  {
+   "id": "tazkiya",
+   "nom": "Spiritualité et rappels",
+   "ar": "التزكية والمواعظ"
+  },
+  {
+   "id": "manhaj",
+   "nom": "Méthodologie et science",
+   "ar": "المنهج والعلم"
+  },
+  {
+   "id": "ramadan",
+   "nom": "Ramadan",
+   "ar": "رمضان"
+  },
+  {
+   "id": "preches",
+   "nom": "Prêches du vendredi",
+   "ar": "خطب الجمعة"
+  },
+  {
+   "id": "divers",
+   "nom": "Conférences et divers",
+   "ar": "متفرقات"
+  }
+ ],
+ "series": [
+  {
+   "id": "hadiths-unicite",
+   "theme": "aqida",
+   "nom": "Les hadiths sur l'unicité d'Allah",
+   "livre": "الأحاديث الواردة في التوحيد",
+   "auteur": "Sheykh Salah al Budeyr",
+   "type": "cours",
+   "statut": "en cours",
+   "nb": 94
+  },
+  {
+   "id": "versets-unicite",
+   "theme": "aqida",
+   "nom": "Les versets du Coran sur l'unicité d'Allah",
+   "livre": "",
+   "auteur": "Sheykh Mohamed Taqieddine al Hilaly",
+   "type": "cours",
+   "statut": "en cours",
+   "nb": 96
+  },
+  {
+   "id": "lumiere-foi",
+   "theme": "aqida",
+   "nom": "La lumière de la foi et les ténèbres de l'hypocrisie",
+   "livre": "نور الإيمان وظلمات النفاق",
+   "auteur": "Sheykh Said ibn Wahf al Qahtany",
+   "type": "cours",
+   "statut": "en cours",
+   "nb": 3
+  },
+  {
+   "id": "tajrid",
+   "theme": "hadith",
+   "nom": "Le résumé du Sahih d'al Boukhary",
+   "livre": "التجريد الصريح لأحاديث الجامع الصحيح",
+   "auteur": "Az-Zoubaydi",
+   "type": "cours",
+   "statut": "en cours",
+   "nb": 42
+  },
+  {
+   "id": "sahih-jami",
+   "theme": "hadith",
+   "nom": "Lecture de Sahih al Jami'",
+   "livre": "صحيح الجامع الصغير",
+   "auteur": "Sheykh al Albâny",
+   "type": "cours",
+   "statut": "en cours",
+   "nb": 19
+  },
+  {
+   "id": "muwatta",
+   "theme": "fiqh",
+   "nom": "Lecture et étude du Muwatta",
+   "livre": "الموطأ",
+   "auteur": "L'imam Malik ibn Anas",
+   "type": "cours",
+   "statut": "en cours",
+   "nb": 56
+  },
+  {
+   "id": "sira-qr",
+   "theme": "sira",
+   "nom": "La biographie du Prophète ﷺ en questions-réponses",
+   "livre": "أمالي في السيرة النبوية",
+   "auteur": "",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 12
+  },
+  {
+   "id": "decouverte-messager",
+   "theme": "sira",
+   "nom": "À la découverte du Messager d'Allah ﷺ",
+   "livre": "",
+   "auteur": "",
+   "type": "cours",
+   "statut": "en cours",
+   "nb": 1
+  },
+  {
+   "id": "sira-resumee",
+   "theme": "sira",
+   "nom": "La biographie résumée du Prophète ﷺ",
+   "livre": "المختصر المفيد في السيرة النبوية",
+   "auteur": "",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 20
+  },
+  {
+   "id": "citations-ibn-qayim",
+   "theme": "tazkiya",
+   "nom": "Les citations spirituelles de l'imam Ibn al Qayim",
+   "livre": "مواعظ ابن القيم",
+   "auteur": "Ibn al Qayim",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 33
+  },
+  {
+   "id": "citations-ibn-taymiyah",
+   "theme": "tazkiya",
+   "nom": "Les citations spirituelles de Sheykh al Islam Ibn Taymiyah",
+   "livre": "مواعظ شيخ الإسلام ابن تيمية",
+   "auteur": "Ibn Taymiyah",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 19
+  },
+  {
+   "id": "tahdhir-sajid",
+   "theme": "aqida",
+   "nom": "La mise en garde contre le fait de prendre les tombes comme lieux de culte",
+   "livre": "تحذير الساجد من اتخاذ القبور مساجد",
+   "auteur": "Sheykh al Albâny",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 7
+  },
+  {
+   "id": "merites-oeuvres",
+   "theme": "hadith",
+   "nom": "Les mérites des bonnes œuvres",
+   "livre": "",
+   "auteur": "Al Hafidh al Mundhiry",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 28
+  },
+  {
+   "id": "merite-mecque",
+   "theme": "hadith",
+   "nom": "Les 40 hadiths sur le mérite de la Mecque",
+   "livre": "",
+   "auteur": "",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 12
+  },
+  {
+   "id": "paraboles-coran",
+   "theme": "coran",
+   "nom": "Les paraboles du Coran",
+   "livre": "الأمثال في القرآن",
+   "auteur": "",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 29
+  },
+  {
+   "id": "comprendre-coran",
+   "theme": "coran",
+   "nom": "Comment comprendre le Coran",
+   "livre": "",
+   "auteur": "Sheykh ibn Otheymine",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 2
+  },
+  {
+   "id": "hisnul-muslim",
+   "theme": "tazkiya",
+   "nom": "Explication de la citadelle du musulman",
+   "livre": "إتحاف المسلم بشرح حصن المسلم",
+   "auteur": "",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 3
+  },
+  {
+   "id": "perfection-religion",
+   "theme": "manhaj",
+   "nom": "La perfection de la religion et le danger de l'innovation",
+   "livre": "",
+   "auteur": "Sheykh Mohammed ibn Salih al Otheymine",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 4
+  },
+  {
+   "id": "se-corriger-precheurs",
+   "theme": "manhaj",
+   "nom": "La manière de se corriger entre prêcheurs",
+   "livre": "",
+   "auteur": "Sheykh abd al Aziz ibn Bâz",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 2
+  },
+  {
+   "id": "divergences-savants",
+   "theme": "manhaj",
+   "nom": "Les divergences entre les savants",
+   "livre": "",
+   "auteur": "Sheykh ibn Otheymine",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 7
+  },
+  {
+   "id": "union-musulmans",
+   "theme": "manhaj",
+   "nom": "L'union des musulmans",
+   "livre": "",
+   "auteur": "Sheykh al Islam ibn Taymiyyah",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 6
+  },
+  {
+   "id": "union-foi",
+   "theme": "manhaj",
+   "nom": "L'union fait la foi",
+   "livre": "",
+   "auteur": "Sheykh abd Rahman ibn Nasir as-Saady",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 8
+  },
+  {
+   "id": "hommage-savoir",
+   "theme": "manhaj",
+   "nom": "Hommage au savoir",
+   "livre": "تعظيم العلم",
+   "auteur": "Sheykh Salih al Oseymi",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 13
+  },
+  {
+   "id": "30-lecons-ramadan",
+   "theme": "ramadan",
+   "nom": "30 leçons pour le mois de Ramadan",
+   "livre": "",
+   "auteur": "Sheykh abd Razzâq al Badr",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 29
+  },
+  {
+   "id": "fatwas-ibn-baz-jeune",
+   "theme": "ramadan",
+   "nom": "Les avis juridiques de Sheykh ibn Bâz sur le jeûne",
+   "livre": "",
+   "auteur": "Sheykh abd al Aziz ibn Bâz",
+   "type": "cours",
+   "statut": "terminée",
+   "nb": 28
+  },
+  {
+   "id": "compagnons",
+   "theme": "preches",
+   "nom": "Les Compagnons du Messager d'Allah ﷺ",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "en cours",
+   "nb": 129
+  },
+  {
+   "id": "reponses-messager",
+   "theme": "preches",
+   "nom": "Les réponses du Messager d'Allah ﷺ",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 40
+  },
+  {
+   "id": "pedagogie-messager",
+   "theme": "preches",
+   "nom": "La pédagogie du Messager d'Allah ﷺ",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 37
+  },
+  {
+   "id": "specificites",
+   "theme": "preches",
+   "nom": "Les spécificités du Messager ﷺ et de sa communauté",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 17
+  },
+  {
+   "id": "au-dela",
+   "theme": "preches",
+   "nom": "Le Jour dernier et l'au-delà",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 12
+  },
+  {
+   "id": "sourate-kahf",
+   "theme": "preches",
+   "nom": "L'explication de sourate al Kahf",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 4
+  },
+  {
+   "id": "preches-coran",
+   "theme": "preches",
+   "nom": "Le Coran, le livre du Ramadan",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 4
+  },
+  {
+   "id": "ramadan-invocations",
+   "theme": "preches",
+   "nom": "Le Ramadan est le mois des invocations",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 3
+  },
+  {
+   "id": "merites-piete",
+   "theme": "preches",
+   "nom": "Les mérites de la piété dans le Noble Coran",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 3
+  },
+  {
+   "id": "priere-voyageur",
+   "theme": "preches",
+   "nom": "Quelques règles relatives à la prière du voyageur",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 3
+  },
+  {
+   "id": "preches-isoles",
+   "theme": "preches",
+   "nom": "Prêches isolés",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 20
+  },
+  {
+   "id": "khotbas-aid",
+   "theme": "preches",
+   "nom": "Khotbas des deux fêtes",
+   "livre": "",
+   "auteur": "",
+   "type": "preche",
+   "statut": "terminée",
+   "nb": 5
+  },
+  {
+   "id": "conferences",
+   "theme": "divers",
+   "nom": "Conférences et rappels",
+   "livre": "",
+   "auteur": "",
+   "type": "conference",
+   "statut": "terminée",
+   "nb": 16
+  }
+ ]
+}
