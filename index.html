@@ -152,7 +152,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
   <a href="#preches" data-t="preches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M5 21V11a7 7 0 0 1 14 0v10M3 21h18M9 21v-5a3 3 0 0 1 6 0v5"/></svg>Vendredi</a>
   <a href="#sources" data-t="sources"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5V19.5"/></svg>Sources</a>
   <a href="#recherche" data-t="recherche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>Recherche</a>
-  <a href="#direct" data-t="direct"><span class="dot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></svg>Direct</a>
+
 </nav>
 <script>
 "use strict";
@@ -504,8 +504,7 @@ function afficher(){
   $app.innerHTML = (vues[route] || vueIntrouvable)();
   const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", }[route] ?? route;
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t === onglet));
-  document.getElementById("top").classList.toggle("sub", !["accueil", "themes", "preches", "sources", "recherche", "direct"].includes(route));
-  document.querySelector('#tabs a[data-t="direct"]').classList.toggle("live", !!(D.conf.direct && D.conf.direct.actif));
+  document.getElementById("top").classList.toggle("sub", !["accueil", "themes", "preches", "sources", "recherche"].includes(route));
 }
 let derniereRoute = "";
 window.addEventListener("hashchange", () => {
