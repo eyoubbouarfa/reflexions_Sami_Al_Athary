@@ -105,7 +105,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
 /* ---------- Écran d'entrée ---------- */
 .porte{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 80% at 50% 28%,#1A6B4E,#06281C);color:#fff;display:grid;place-items:center;padding:calc(28px + var(--safe-t)) 26px calc(28px + var(--safe-b));text-align:center;transition:opacity .5s;overflow-y:auto}
 .porte.out{opacity:0;pointer-events:none}
-.porte .in{display:grid;gap:14px;max-width:520px;width:100%}
+.porte .in{display:grid;gap:14px;max-width:520px;width:100%;padding-bottom:84px}
 .porte .logo{width:132px;height:132px;justify-self:center;border-radius:50%;box-shadow:0 8px 30px rgba(0,0,0,.4),0 0 0 2px rgba(201,164,94,.7)}
 .porte h1{font:600 32px/1.1 var(--display);letter-spacing:.3px;margin-top:4px}
 .porte .devise{font-size:11.5px;letter-spacing:2.4px;text-transform:uppercase;color:var(--gold-2)}
@@ -115,7 +115,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
 .porte .href{font-size:12px;opacity:.75}
 .porte .infos{font-size:13.5px;line-height:1.55;color:#CFE0D6;background:rgba(255,255,255,.06);border:1px solid rgba(201,164,94,.3);border-radius:14px;padding:12px 14px}
 .porte .infos b{color:#fff}
-.porte .entrer{justify-self:center;display:inline-flex;align-items:center;gap:12px;margin-top:6px;padding:14px 30px;border-radius:99px;background:linear-gradient(180deg,#D9B873,#A8833F);color:#15241C;font:700 16px var(--body);letter-spacing:.5px;box-shadow:0 6px 20px rgba(0,0,0,.35);position:relative}
+.porte .entrer{position:absolute;left:auto;top:auto;right:20px;place-self:end end;bottom:calc(34px + env(safe-area-inset-bottom,0px));z-index:51;width:max-content;display:inline-flex;align-items:center;gap:12px;padding:14px 30px;border-radius:99px;background:linear-gradient(180deg,#D9B873,#A8833F);color:#15241C;font:700 16px var(--body);letter-spacing:.5px;box-shadow:0 6px 20px rgba(0,0,0,.35);position:relative}
 .porte .entrer .ring{position:relative;width:18px;height:18px;display:grid;place-items:center}
 .porte .entrer .ring::before,.porte .entrer .ring::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid #15241C;animation:ripple 1.6s ease-out infinite}
 .porte .entrer .ring::after{animation-delay:.8s}
@@ -503,8 +503,8 @@ function ouvrirPorte(){
     <div class="href">${esc(c(h.ref))} · ${esc(c(h.g))}</div>
     <div class="infos">Cours donnés à la <b>${esc(D.conf.mosquee || "mosquée")}</b><br>
       <b>${esc(hr.cours_jours || "")}</b>, ${esc((hr.cours_moment || "").replace(/^Entre/, "entre"))}<br>
-      Prêche du vendredi à <b>${esc(ete ? hr.jumua_ete : hr.jumua_hiver)}</b></div>
-    <button class="entrer" id="entrer"><span class="ring"><i></i></span>Entrer</button>`;
+      Prêche du vendredi à <b>${esc(ete ? hr.jumua_ete : hr.jumua_hiver)}</b></div>`;
+  el.insertAdjacentHTML("beforeend", `<button class="entrer" id="entrer"><span class="ring"><i></i></span>Entrer</button>`);
   const fermer = () => { el.classList.add("out"); setTimeout(() => el.remove(), 550); };
   document.getElementById("entrer").onclick = fermer;
 }
