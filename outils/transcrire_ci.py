@@ -28,9 +28,16 @@ def telecharger(ep):
     return cible
 
 
+def lire_audio(fichier):
+    """Décode l'audio en 16 kHz mono avec ffmpeg (sans passer par PyAV)."""
+    import numpy as np
+    brut = subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-i", str(fichier), "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
+                          capture_output=True, check=True).stdout
+    return np.frombuffer(brut, np.int16).astype(np.float32) / 32768.0
+
+
 def fenetres_arabes(modele, audio, pas=30):
     """Renvoie les intervalles (début, fin) en secondes où l'arabe domine."""
-    from faster_whisper.audio import decode_audio  # noqa
     sr = 16000
     zones = []
     for debut in range(0, int(len(audio) / sr), pas):
@@ -49,14 +56,13 @@ def fenetres_arabes(modele, audio, pas=30):
 
 def main(ids):
     from faster_whisper import WhisperModel
-    from faster_whisper.audio import decode_audio
     eps = {e["id"]: e for e in json.loads((RACINE / "data" / "episodes.json").read_text(encoding="utf-8"))}
     modele = WhisperModel("medium", device="cpu", compute_type="int8")
     SORTIE.mkdir(parents=True, exist_ok=True)
     for i in ids:
         ep = eps[int(i)]
         fichier = telecharger(ep)
-        audio = decode_audio(str(fichier))
+        audio = lire_audio(fichier)
         zones = fenetres_arabes(modele, audio)
         segs, _info = modele.transcribe(audio, language="fr", initial_prompt=AMORCE, vad_filter=True, beam_size=1)
         sortie = []
