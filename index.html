@@ -467,7 +467,8 @@ function vueEpisode(id){
     <div class="btns">
       <a class="btn gold" href="${esc(e.audio)}" target="_blank" rel="noopener">${sc ? "Ouvrir dans SoundCloud" : "Écouter"}</a>
       <button class="btn line" id="ecoute">${ecoutes.has(e.id) ? "✓ Écouté" : "Marquer comme écouté"}</button>
-      ${t ? '<button class="btn line" id="pdf">Télécharger en PDF</button>' : ""}
+      ${D.pdfs && D.pdfs.has(e.id) ? `<a class="btn line" href="data/pdf/${e.id}.pdf" target="_blank" rel="noopener">Cours en PDF</a>` : ""}
+      ${t ? '<button class="btn line" id="pdf">Imprimer les notes</button>' : ""}
     </div>
   </div>
   <h2>Notes du cours</h2>
@@ -553,8 +554,8 @@ async function charger(nom, defaut){
   try{ const r = await fetch("data/" + nom, {cache: "no-cache"}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return defaut; }
 }
 (async () => {
-  const [ser, eps, conf, textes] = await Promise.all([charger("series.json", {themes: [], series: []}), charger("episodes.json", []), charger("config.json", {}), charger("textes.json", {})]);
-  D.themes = ser.themes; D.series = ser.series; D.eps = eps; D.conf = conf; D.textes = textes || {};
+  const [ser, eps, conf, textes, pdfs] = await Promise.all([charger("series.json", {themes: [], series: []}), charger("episodes.json", []), charger("config.json", {}), charger("textes.json", {}), charger("pdfs.json", [])]);
+  D.themes = ser.themes; D.series = ser.series; D.eps = eps; D.conf = conf; D.textes = textes || {}; D.pdfs = new Set(pdfs || []);
   D.series.forEach(s => D.serie.set(s.id, s));
   D.eps = D.eps.filter(e => D.serie.has(e.serie));
   D.eps.forEach(e => { D.byId.set(e.id, e); if(!D.bySerie.has(e.serie)) D.bySerie.set(e.serie, []); D.bySerie.get(e.serie).push(e); });
