@@ -133,6 +133,9 @@ function basculerEcoute(id){ ecoutes.has(id) ? ecoutes.delete(id) : ecoutes.add(
 /* ---------- utilitaires ---------- */
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[ً-ٰٟ]/g, "").toLowerCase().replace(/[’']/g, "'");
+const MOIS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const JOURS = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+function dateFr(d){ if(!d) return ""; const [y, m, j] = d.split("-").map(Number); return `${j} ${MOIS[m - 1]} ${y}`; }
 const chev = '<span class="chev">›</span>';
 function titreEp(e){
   const s = D.serie.get(e.serie);
@@ -140,7 +143,7 @@ function titreEp(e){
 }
 function ligneEp(e, avecSerie){
   const s = D.serie.get(e.serie);
-  const sous = avecSerie ? s.nom : [e.fin ? "Dernier épisode" : "", D.textes[e.id] ? "Notes disponibles" : ""].filter(Boolean).join(" · ");
+  const sous = [avecSerie ? s.nom : "", dateFr(e.date), e.fin ? "Dernier épisode" : "", D.textes[e.id] ? "Notes disponibles" : ""].filter(Boolean).join(" · ");
   return `<a class="row ${ecoutes.has(e.id) ? "done" : ""}" href="#ep-${e.id}">
     <span class="num">${e.num != null ? e.num : "•"}</span>
     <span class="txt"><span class="t1">${esc(titreEp(e))}</span>${sous ? `<span class="t2" style="display:block">${esc(sous)}</span>` : ""}</span>${chev}</a>`;
@@ -194,14 +197,30 @@ function vueAccueil(){
   <footer>${D.eps.length} cours et prêches classés · <a href="${esc(D.conf.telegram)}">Canal Telegram</a></footer>`;
 }
 
+function programmeReel(){
+  // Jour de chaque livre en cours, déduit des dates réelles de ses 8 derniers cours (pas de la cadence)
+  const parJour = new Map();
+  D.series.filter(s => s.statut === "en cours").forEach(s => {
+    const dates = (D.bySerie.get(s.id) || []).filter(e => e.date).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+    if(dates.length < 3) return;
+    const compte = {}; dates.forEach(e => { const j = new Date(e.date + "T12:00:00").getDay(); compte[j] = (compte[j] || 0) + 1; });
+    const [jour, n] = Object.entries(compte).sort((a, b) => b[1] - a[1])[0];
+    if(n < dates.length / 2) return;
+    if(!parJour.has(+jour)) parJour.set(+jour, []);
+    parJour.get(+jour).push(s.id);
+  });
+  return [...parJour.entries()].sort((a, b) => ((a[0] + 7) % 7) - ((b[0] + 7) % 7)).map(([n, series]) => ({jour: JOURS[n], n, series}));
+}
 function vueProgramme(){
-  const prog = D.conf.programme || []; if(!prog.length) return "";
+  const reel = programmeReel();
+  const prog = reel.length ? reel : (D.conf.programme || []); if(!prog.length) return "";
   const auj = new Date().getDay();
   return `<h2>Programme de la semaine</h2><div class="list">${prog.map(j => `
     <div class="card ${j.n === auj ? "today" : ""}"><div style="display:flex;justify-content:space-between;align-items:baseline">
       <h3>${esc(j.jour)}</h3>${j.n === auj ? '<span class="tag">Aujourd\'hui</span>' : ""}</div>
-      ${j.series.filter(id => D.serie.has(id)).map(id => { const s = D.serie.get(id), der = (D.bySerie.get(id) || [])[0];
-        return `<a class="prog" href="#serie-${id}"><span>${esc(s.nom)}</span><span class="muted small">${der && der.num != null ? "dernier : n° " + der.num : ""} ›</span></a>`; }).join("")}
+      ${j.series.filter(id => D.serie.has(id)).map(id => { const s = D.serie.get(id);
+        const der = [...(D.bySerie.get(id) || [])].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.num ?? 0) - (a.num ?? 0))[0];
+        return `<a class="prog" href="#serie-${id}"><span>${esc(s.nom)}</span><span class="muted small">${der && der.num != null ? "n° " + der.num : ""}${der && der.date ? " · " + dateFr(der.date) : ""} ›</span></a>`; }).join("")}
     </div>`).join("")}</div>`;
 }
 
@@ -367,7 +386,7 @@ function vueEpisode(id){
   return `<div class="card">
     <a class="tag" href="#serie-${s.id}" style="text-decoration:none">${esc(s.nom)}</a>
     <h2 style="margin:10px 0 4px">${e.num != null && e.titre ? `<span class="muted">n° ${e.num} · </span>` : ""}${esc(titreEp(e))}</h2>
-    <div class="meta">${s.auteur ? `<span>${esc(s.auteur)}</span>` : ""}${e.fin ? "<span>Dernier épisode de la série</span>" : ""}${s.type === "preche" ? "<span>Prêche du vendredi</span>" : ""}</div>
+    <div class="meta">${e.date ? `<span>${dateFr(e.date)}</span>` : ""}${s.auteur ? `<span>${esc(s.auteur)}</span>` : ""}${e.fin ? "<span>Dernier épisode de la série</span>" : ""}${s.type === "preche" ? "<span>Prêche du vendredi</span>" : ""}</div>
     ${sc ? `<iframe class="player noprint" loading="lazy" allow="autoplay" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(e.audio)}&color=%239c7a42&visual=false&show_comments=false&show_teaser=false"></iframe>` : ""}
     <div class="btns">
       <a class="btn gold" href="${esc(e.audio)}" target="_blank" rel="noopener">${sc ? "Ouvrir dans SoundCloud" : "Écouter"}</a>

@@ -18,12 +18,12 @@ Chaque utilisateur peut marquer les cours écoutés et reprendre un livre là o�
 2. Settings > Pages > Branch `main` / dossier racine.
 3. L'adresse s'affiche après une minute. Sur téléphone : « Ajouter à l'écran d'accueil ».
 
-## Ajouter les nouveaux cours
-1. Telegram Desktop > canal > ⋮ > Exporter l'historique > aucun média, format JSON.
-2. `python outils/import_telegram.py result.json`
-3. Pousser `data/episodes.json` et `data/series.json`.
+## Mise à jour automatique
+Deux fois par jour, GitHub lit le canal Telegram et le compte SoundCloud, classe les nouveaux cours par leur titre et met l'appli à jour (`outils/synchro.py`). Aucune cadence n'est supposée : un cours manqué ou décalé ne change rien au classement.
 
-Un cours non reconnu est rangé dans « Conférences » et signalé : ajouter la série dans `outils/series.py`, puis relancer.
+Pour relire tout le canal (dates, cours manquants) : onglet Actions > Synchronisation des cours > Run workflow > cocher « Relire tout le canal ».
+
+Un cours non reconnu est rangé dans « Conférences » et signalé dans le journal : ajouter la série dans `outils/series.py`.
 
 ## Lancer un direct
 Dans `data/config.json`, mettre `"actif": true`, un titre et le lien du direct (YouTube non répertorié, par exemple), puis pousser. Remettre `false` à la fin.
