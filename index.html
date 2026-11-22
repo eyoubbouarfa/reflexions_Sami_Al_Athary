@@ -119,7 +119,11 @@ details.plier summary::after{content:"›";color:var(--gold-2);font-size:20px;tr
 details.plier[open] summary::after{transform:rotate(90deg)}
 details.plier summary small{display:block;font-weight:400;color:#CFE0D6;font-size:12px;margin-top:1px}
 details.plier summary small b{color:var(--gold-2)}
-.hero.dernier{margin-bottom:14px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.hero.dernier{margin-bottom:14px;padding:14px 16px}
+.hero.dernier .ligne{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff;margin-top:6px}
+.hero.dernier.multi .ligne{padding-top:10px;border-top:1px solid rgba(201,164,94,.25);margin-top:10px}
+.hero.dernier.multi .ligne:nth-of-type(1){border-top:0;padding-top:0;margin-top:8px}
+.hero.dernier.multi .ecouter{width:44px;height:44px;font-size:18px}
 .hero.dernier .txt{flex:1;min-width:0}
 .hero.dernier h3{font-size:19px;margin:4px 0 2px;line-height:1.2}
 .hero.dernier p{font-size:12.5px}
@@ -292,31 +296,40 @@ function vueBienvenue(){
   </section>`;
 }
 // Dernier enregistrement, mis en avant en haut de l'accueil
-function blocDernier(){
-  const att = (D.attente || [])[0], e = D.eps[0];
-  const carte = (lien, titre, sous) => `<a class="hero dernier" href="${lien}" style="text-decoration:none">
-      <span class="txt"><span class="tag">Dernier enregistrement</span><h3>${esc(titre)}</h3><p>${esc(sous)}</p></span>
-      <span class="ecouter" aria-label="Écouter">▶</span></a>`;
-  if(att) return carte(`#nouveau-${att.id}`, att.titre || "Cours", `${dateFr(att.date.slice(0, 10))} · écoutable tout de suite`);
-  if(!e) return "";
-  const s = D.serie.get(e.serie);
-  return carte(`#ep-${e.id}`, titreEp(e), [s.nom, e.num != null ? "n° " + e.num : "", dateFr(e.date)].filter(Boolean).join(" · "));
+// Tous les enregistrements du dernier jour (cours tout juste enregistrés + cours publiés)
+function derniersDuJour(){
+  const items = [
+    ...(D.attente || []).map(c => ({cle: "a" + c.id, lien: `#nouveau-${c.id}`, titre: c.titre || "Cours", sous: "écoutable tout de suite", date: (c.date || "").slice(0, 10)})),
+    ...D.eps.slice(0, 15).map(e => { const s = D.serie.get(e.serie); return {cle: "e" + e.id, lien: `#ep-${e.id}`, titre: titreEp(e), sous: [s.nom, e.num != null ? "n° " + e.num : ""].filter(Boolean).join(" · "), date: e.date || ""}; })
+  ].filter(x => x.date);
+  const jour = items.reduce((m, x) => x.date > m ? x.date : m, "");
+  return items.filter(x => x.date === jour);
+}
+function blocDernier(liste){
+  if(!liste.length) return "";
+  const plusieurs = liste.length > 1;
+  return `<div class="hero dernier${plusieurs ? " multi" : ""}">
+    <span class="tag">${plusieurs ? `Derniers enregistrements · ${dateFr(liste[0].date)}` : "Dernier enregistrement"}</span>
+    ${liste.map(x => `<a class="ligne" href="${x.lien}">
+      <span class="txt"><h3>${esc(x.titre)}</h3><p>${esc(x.sous)}${plusieurs ? "" : " · " + dateFr(x.date)}</p></span>
+      <span class="ecouter" aria-label="Écouter">▶</span></a>`).join("")}
+  </div>`;
 }
 function vueAccueil(){
   const live = D.conf.direct && D.conf.direct.actif;
-  const enAttente = (D.attente || []).length > 0;
-  const recents = D.eps.slice(enAttente ? 0 : 1, enAttente ? 8 : 9);
+  const duJour = derniersDuJour(), montres = new Set(duJour.map(x => x.cle));
+  const recents = D.eps.filter(e => !montres.has("e" + e.id)).slice(0, 8);
   const vendredi = D.eps.find(e => D.serie.get(e.serie).type === "preche");
   return `
   ${blocAnnonce()}
   ${vueBienvenue()}
   ${live ? `<a class="hero" href="#direct" style="display:block;text-decoration:none;margin-bottom:14px">
       <span class="tag live">En direct</span><h3>${esc(D.conf.direct.titre || "Cours en direct")}</h3><p>Rejoindre maintenant</p></a>` : ""}
-  ${blocDernier()}
-  ${blocAttente(1)}
+  ${blocDernier(duJour)}
+  ${blocAttente(montres)}
   <h2>Derniers cours publiés</h2>
   <div class="list">${recents.map(e => ligneEp(e, true)).join("")}</div>
-  ${vendredi && vendredi !== D.eps[0] ? `<div class="hero" style="margin-top:14px">
+  ${vendredi && !montres.has("e" + vendredi.id) ? `<div class="hero" style="margin-top:14px">
       <span class="tag">Dernier prêche du vendredi</span>
       <h3>${esc(titreEp(vendredi))}</h3>
       <p>${esc(D.serie.get(vendredi.serie).nom)}${vendredi.num != null ? " · n° " + vendredi.num : ""}</p>
@@ -1099,9 +1112,10 @@ async function chargerAttente(){
     if(h === "accueil" || h.startsWith("nouveau")) afficher();
   }catch(e){}
 }
-function blocAttente(depuis = 0){
-  if(!D.attente || D.attente.length <= depuis) return "";
-  return `<h2>Tout juste enregistrés</h2><div class="list">${D.attente.slice(depuis).map(c => `<a class="row" href="#nouveau-${c.id}"><span class="num">●</span><span class="txt"><span class="t1">${esc(c.titre || "Cours")}</span><span class="t2">${dateFr(c.date.slice(0, 10))} · en cours de rangement</span></span><span class="chev">›</span></a>`).join("")}</div>`;
+function blocAttente(montres = new Set()){
+  const reste = (D.attente || []).filter(c => !montres.has("a" + c.id));
+  if(!reste.length) return "";
+  return `<h2>Tout juste enregistrés</h2><div class="list">${reste.map(c => `<a class="row" href="#nouveau-${c.id}"><span class="num">●</span><span class="txt"><span class="t1">${esc(c.titre || "Cours")}</span><span class="t2">${dateFr(c.date.slice(0, 10))} · en cours de rangement</span></span><span class="chev">›</span></a>`).join("")}</div>`;
 }
 function vueNouveau(id){
   const c = (D.attente || []).find(x => x.id === id);
