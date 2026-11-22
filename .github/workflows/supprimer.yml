@@ -17,4 +17,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - run: for f in ${{ inputs.fichiers }}; do gh release delete-asset cours "$f" --yes -R "${{ github.repository }}" && echo "Supprimé : $f"; done
+      - run: |
+          for f in ${{ inputs.fichiers }}; do
+            gh release delete-asset cours "$f" --yes -R "${{ github.repository }}" && echo "Supprimé $f"
+          done
