@@ -730,7 +730,7 @@ async function demarrerPartie(c){
   r.onerror = () => interrompu();
   REC.flux.getAudioTracks().forEach(t => t.onended = () => { if(REC.etat === "enregistre") interrompu(); });
   r.start(5000);
-  REC.rec = r; REC.etat = "enregistre"; REC.debutPartie = Date.now(); REC.info = "";
+  REC.rec = r; REC.etat = "enregistre"; REC.debutPartie = Date.now(); REC.dernierMorceau = Date.now(); REC.info = "";
   garderEcranAllume(); majRec();
 }
 function interrompu(){
@@ -753,7 +753,7 @@ async function commencerCours(){
 }
 async function pauseCours(){
   if(REC.etat === "enregistre" && REC.rec){ REC.rec.pause(); REC.cumul += Date.now() - REC.debutPartie; REC.etat = "pause"; }
-  else if(REC.etat === "pause" && REC.rec && REC.rec.state === "paused"){ REC.rec.resume(); REC.debutPartie = Date.now(); REC.etat = "enregistre"; garderEcranAllume(); }
+  else if(REC.etat === "pause" && REC.rec && REC.rec.state === "paused"){ REC.rec.resume(); REC.debutPartie = Date.now(); REC.dernierMorceau = Date.now(); REC.etat = "enregistre"; garderEcranAllume(); }
   majRec();
 }
 async function reprendreCours(){ const c = await bdd.cours(); if(c) await demarrerPartie(c).catch(erreurRec); }
