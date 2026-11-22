@@ -58,12 +58,12 @@ def copie_telegram(fichier, titre, duree):
         alerte(f"« {titre} » n'a pas été copié sur Telegram : le robot Telegram n'est pas encore réglé. Le cours est bien dans l'appli.")
         return None
     try:
-        r = subprocess.run(["curl", "-s", "-m", "600", "-F", f"chat_id=@{CANAL}", "-F", f"caption={titre}", "-F", f"title={titre}",
+        r = subprocess.run(["curl", "-sS", "-m", "600", "-F", f"chat_id=@{CANAL}", "-F", f"caption={titre}", "-F", f"title={titre}",
                             "-F", "performer=Sami al Athary", "-F", f"duration={duree}", "-F", f"audio=@{fichier}",
                             f"https://api.telegram.org/bot{jeton}/sendAudio"], capture_output=True, text=True, timeout=700)
         j = json.loads(r.stdout or "{}")
         if not j.get("ok"):
-            raise RuntimeError(j.get("description") or r.stderr or "réponse vide")
+            raise RuntimeError(j.get("description") or (r.stderr or "").strip()[:200] or f"réponse vide, code {r.returncode}")
         return f"https://t.me/{CANAL}/{j['result']['message_id']}"
     except Exception as e:
         alerte(f"« {titre} » n'a pas pu être copié sur Telegram ({e}). Le cours est bien dans l'appli ; publie-le à la main si besoin.")
