@@ -1,0 +1,20 @@
+name: Supprimer des fichiers de cours
+
+# Retire de l'espace « cours » les fichiers dont le nom est donné (audio, PDF, transcription).
+on:
+  workflow_dispatch:
+    inputs:
+      fichiers:
+        description: "Noms exacts des fichiers à supprimer, séparés par des espaces"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  supprimer:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - run: for f in ${{ inputs.fichiers }}; do gh release delete-asset cours "$f" --yes -R "${{ github.repository }}" && echo "Supprimé : $f"; done
