@@ -24,7 +24,7 @@ def telecharger(ep):
     AUDIO.mkdir(exist_ok=True)
     cible = AUDIO / f"{ep['id']}.mp3"
     if not cible.exists():
-        subprocess.run(["yt-dlp", "-q", "-x", "--audio-format", "mp3", "-o", str(AUDIO / f"{ep['id']}.%(ext)s"), ep["audio"]], check=True)
+        subprocess.run(["yt-dlp", "-q", "--retries", "10", "--extractor-retries", "5", "-x", "--audio-format", "mp3", "-o", str(AUDIO / f"{ep['id']}.%(ext)s"), ep["audio"]], check=True)
     return cible
 
 
