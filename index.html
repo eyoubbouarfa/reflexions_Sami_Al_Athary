@@ -706,7 +706,7 @@ document.addEventListener("visibilitychange", () => {
     const trou = Date.now() - (REC.dernierMorceau || REC.debutPartie);
     if(trou > 12000){
       REC.perdu += trou - 5000;
-      REC.info = `Attention : pendant que l'écran était verrouillé, le téléphone a coupé le micro (environ ${Math.round((trou - 5000) / 1000)} s non enregistrées). L'enregistrement a repris. Ne verrouille pas l'écran : il reste allumé tout seul.`;
+      REC.info = `Attention : pendant que l'écran était verrouillé, le téléphone a coupé le micro (environ ${Math.round((trou - 5000) / 1000)} s non enregistrées). L'enregistrement a repris. Sur ce téléphone, évite de verrouiller l'écran pendant un cours.`;
       majRec();
     }
   }, 6000);
@@ -838,7 +838,7 @@ function carteEnregistrement(){
     <div class="btns">${boutons}</div>
     ${e === "repos" ? `<label class="btn line" style="margin-top:8px;display:inline-flex">Envoyer un fichier audio<input id="rfich" type="file" accept="audio/*" hidden></label>` : ""}
     <p id="rinfo" class="small" style="margin-top:10px;color:var(--gold)">${esc(REC.info)}</p>
-    ${e === "repos" || e === "enregistre" ? `<p class="small muted" style="margin-top:8px">Avant de commencer : active « Ne pas déranger » pour éviter les appels. Ne verrouille pas l'écran avec le bouton : certains téléphones coupent alors le micro. L'écran reste allumé tout seul ; pose le téléphone écran contre la table si la lumière gêne.</p>` : ""}
+    ${e === "repos" || e === "enregistre" ? `<p class="small muted" style="margin-top:8px">Avant de commencer : active « Ne pas déranger » pour éviter les appels. Sur Android, tu peux verrouiller l'écran, l'enregistrement continue. Sur iPhone, laisse l'appli ouverte : l'écran reste allumé tout seul. Dans tous les cas, si le micro a été coupé, l'appli te le dira en revenant.</p>` : ""}
   </div>`;
 }
 function majRec(){
