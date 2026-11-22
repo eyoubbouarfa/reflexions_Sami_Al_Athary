@@ -28,7 +28,7 @@ RACINE = Path(__file__).resolve().parent.parent
 FICHIER = RACINE / "data" / "episodes.json"
 API = json.loads((RACINE / "data" / "api.json").read_text())["url"]
 CF = next(s for s in SERIES if s["code"] == "CF")
-ETIQUETTE = "enregistrements"
+ETIQUETTE = "cours"
 CANAL = "Sami_Athary"
 
 
@@ -91,8 +91,8 @@ def main():
         return
     eps = json.loads(FICHIER.read_text(encoding="utf-8"))
     subprocess.run(["gh", "release", "view", ETIQUETTE], capture_output=True).returncode == 0 or subprocess.run(
-        ["gh", "release", "create", ETIQUETTE, "--title", "Enregistrements des cours", "--notes",
-         "Cours enregistrés depuis l'appli. Ne pas supprimer : l'appli lit les fichiers ici."], check=True)
+        ["gh", "release", "create", ETIQUETTE, "--title", "Cours : audios et PDF", "--notes",
+         "Audios enregistrés depuis l'appli, PDF et transcriptions des cours. Ne pas supprimer : l'appli lit les fichiers ici."], check=True)
     ranges, nouveaux = [], []
     for c in attente:
         with tempfile.TemporaryDirectory() as d:

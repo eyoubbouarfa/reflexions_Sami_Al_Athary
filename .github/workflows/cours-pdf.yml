@@ -1,19 +1,37 @@
 name: PDF des cours
 
+# Transcrit chaque cours (reconnaissance vocale, arabe exclu), fabrique son PDF et le range
+# avec les audios dans l'espace « cours » des releases GitHub. Un cours par machine, en parallèle.
 on:
   workflow_dispatch:
     inputs:
       ids:
-        description: "Numéros des posts à traiter, séparés par des espaces (ex : 1823 1814)"
+        description: "Numéros des cours à traiter, séparés par des espaces (ex : 1823 1814)"
         required: true
 
 permissions:
   contents: write
 
 jobs:
-  pdf:
+  preparer:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    outputs:
+      ids: ${{ steps.m.outputs.ids }}
+    steps:
+      - id: m
+        run: echo "ids=$(echo '${{ inputs.ids }}' | xargs -n1 | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+
+  pdf:
+    needs: preparer
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        id: ${{ fromJson(needs.preparer.outputs.ids) }}
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,14 +42,34 @@ jobs:
           path: ~/.cache/huggingface
           key: whisper-medium
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - run: pip install faster-whisper yt-dlp reportlab matplotlib
+      - run: pip install -q faster-whisper yt-dlp reportlab matplotlib
       - name: Transcrire (français seulement)
-        run: python outils/transcrire_ci.py ${{ inputs.ids }}
-      - name: Construire les PDF
-        run: python outils/cours_pdf.py ${{ inputs.ids }}
-      - name: Publier
+        run: python outils/transcrire_ci.py ${{ matrix.id }}
+      - name: Construire le PDF
+        run: python outils/cours_pdf.py ${{ matrix.id }}
+      - name: Ranger avec les audios
         run: |
+          gh release view cours >/dev/null 2>&1 || gh release create cours --title "Cours : audios et PDF" --notes "Audios enregistrés depuis l'appli, PDF et transcriptions des cours. Ne pas supprimer : l'appli lit les fichiers ici." || true
+          gh release upload cours "data/pdf/${{ matrix.id }}.pdf" "data/transcriptions/${{ matrix.id }}.json" --clobber
+
+  publier:
+    needs: pdf
+    if: always()
+    runs-on: ubuntu-latest
+    concurrency:
+      group: publier-pdf
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mettre à jour la liste des PDF
+        run: |
+          gh release view cours --json assets -q '[.assets[].name | select(endswith(".pdf")) | rtrimstr(".pdf") | tonumber] | sort' > data/pdfs.json
           git config user.name "Eyoub Bouarfa"
           git config user.email "eyoubbouarfa@users.noreply.github.com"
-          git add data/transcriptions data/pdf data/pdfs.json
-          git commit -m "PDF des cours ${{ inputs.ids }}" && git pull --rebase && git push
+          git add data/pdfs.json
+          git diff --cached --quiet && exit 0
+          git commit -m "PDF des cours ${{ inputs.ids }}"
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push -q && exit 0; sleep $((i*5)); done
+          exit 1

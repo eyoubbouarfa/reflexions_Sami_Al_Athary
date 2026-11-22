@@ -47,7 +47,7 @@ async function lireJeton(env, req) {
 // Chaque cours enregistré est envoyé en parties (une par reprise d'enregistrement) et gardé ici
 // le temps que le robot GitHub le convertisse en mp3 et le range pour de bon. Il est écoutable tout de suite.
 const DEPOT = "eyoubbouarfa/savoir_Sami_Al_Athary";
-const ETIQUETTE = "enregistrements";
+const ETIQUETTE = "cours"; // audios enregistrés, PDF et transcriptions, tous au même endroit
 const MAX_PARTIE = 24 * 1024 * 1024; // limite d'une valeur KV : 25 Mo
 const ID_OK = /^[a-z0-9-]{6,40}$/;
 const cleRobot = env => hmac(String(env.CODE_SAMI || ""), "robot");
@@ -138,14 +138,16 @@ async function routesCours(req, env, url) {
   }
 
   // Écoute d'un cours rangé : relaie le mp3 stocké sur GitHub avec le bon type pour les téléphones
-  m = /^\/audio\/([\w.-]+\.mp3)$/.exec(p);
+  m = /^\/(audio|pdf)\/([\w.-]+\.(mp3|pdf))$/.exec(p);
   if (m && (req.method === "GET" || req.method === "HEAD")) {
+    const fichier = m[2], estPdf = m[3] === "pdf";
     const h = new Headers();
     if (req.headers.get("Range")) h.set("Range", req.headers.get("Range"));
-    const r = await fetch(`https://github.com/${DEPOT}/releases/download/${ETIQUETTE}/${m[1]}`, { headers: h, redirect: "follow", method: req.method });
+    const r = await fetch(`https://github.com/${DEPOT}/releases/download/${ETIQUETTE}/${fichier}`, { headers: h, redirect: "follow", method: req.method });
     const out = new Headers(cors(req));
     for (const k of ["Content-Length", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified"]) if (r.headers.get(k)) out.set(k, r.headers.get(k));
-    out.set("Content-Type", "audio/mpeg"); out.set("Accept-Ranges", "bytes"); out.set("Cache-Control", "public, max-age=86400");
+    out.set("Content-Type", estPdf ? "application/pdf" : "audio/mpeg");
+    if (estPdf) out.set("Content-Disposition", `inline; filename="${fichier}"`); out.set("Accept-Ranges", "bytes"); out.set("Cache-Control", "public, max-age=86400");
     return new Response(r.body, { status: r.status, headers: out });
   }
   return null;
@@ -156,7 +158,7 @@ export default {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
 
-    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/") || url.pathname === "/alertes") {
+    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/") || url.pathname.startsWith("/pdf/") || url.pathname === "/alertes") {
       const r = await routesCours(req, env, url);
       if (r) return r;
     }

@@ -477,7 +477,7 @@ function vueEpisode(id){
     <div class="btns">
       ${appli ? "" : `<a class="btn gold" href="${esc(e.audio)}" target="_blank" rel="noopener">${sc ? "Ouvrir dans SoundCloud" : "Écouter"}</a>`}
       <button class="btn line" id="ecoute">${ecoutes.has(e.id) ? "✓ Écouté" : "Marquer comme écouté"}</button>
-      ${D.pdfs && D.pdfs.has(e.id) ? `<a class="btn line" href="data/pdf/${e.id}.pdf" target="_blank" rel="noopener">Cours en PDF</a>` : ""}
+      ${D.pdfs && D.pdfs.has(e.id) ? `<a class="btn line" href="${D.api}/pdf/${e.id}.pdf" target="_blank" rel="noopener">Cours en PDF</a>` : ""}
       ${t ? '<button class="btn line" id="pdf">Imprimer les notes</button>' : ""}
     </div>
   </div>
@@ -890,7 +890,7 @@ function compterVue(){
 }
 document.addEventListener("click", ev => {
   const a = ev.target.closest("a"); if(!a) return;
-  if(/\/pdf\//.test(a.getAttribute("href") || "")) compter("pdf-" + a.getAttribute("href").split("/").pop(), "Téléchargement PDF", true);
+  if(/\/pdf\/\d+\.pdf$/.test(a.getAttribute("href") || "")) compter("pdf-" + a.getAttribute("href").split("/").pop(), "Téléchargement PDF", true);
   else if(/soundcloud|t\.me/.test(a.href) && /Écouter|SoundCloud/.test(a.textContent)) compter("ecoute-" + (location.hash.split("-")[1] || ""), "Écoute d'un cours", true);
 });
 
