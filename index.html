@@ -766,7 +766,7 @@ function vuePrive(){
    L'audio est sauvegardé sur le téléphone toutes les 5 secondes : une coupure (appel, écran verrouillé,
    batterie) ne fait perdre que les dernières secondes. On reprend, ça crée une nouvelle partie,
    et le robot recolle toutes les parties en un seul mp3. */
-const REC = {perdu: 0, dernierMorceau: 0, etat: "repos", rec: null, flux: null, verrou: null, debutPartie: 0, cumul: 0, octets: 0, minuteur: null, info: "", envoi: null};
+const REC = {range: null, perdu: 0, dernierMorceau: 0, etat: "repos", rec: null, flux: null, verrou: null, debutPartie: 0, cumul: 0, octets: 0, minuteur: null, info: "", envoi: null};
 const MAX_OCTETS_PARTIE = 18 * 1024 * 1024;
 const bdd = (() => {
   let p;
@@ -841,6 +841,7 @@ async function commencerCours(){
   if(!titre){ REC.info = "Donne d'abord un titre, comme d'habitude : numéro, livre, passage."; majRec(); return; }
   if(!window.MediaRecorder){ REC.info = "Ce téléphone ne permet pas d'enregistrer depuis l'appli. Mets-le à jour ou utilise « Envoyer un fichier »."; majRec(); return; }
   await bdd.vider(); REC.perdu = 0; REC.dernierMorceau = Date.now();
+  REC.range = null;
   const c = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), titre, date: new Date().toISOString(), parties: 0, duree: 0};
   REC.cumul = 0;
   await demarrerPartie(c).catch(erreurRec);
@@ -878,7 +879,7 @@ async function envoyerCours(){
     }
     await bdd.vider(); await bdd.majCours(null);
     REC.etat = "repos"; REC.cumul = 0; REC.titre = "";
-    REC.info = `« ${c.titre} » est envoyé. Il est écoutable tout de suite sur l'accueil, et rangé dans son livre d'ici une demi-heure.`;
+    REC.info = `« ${c.titre} » est envoyé.`; REC.range = {id: c.id, titre: c.titre};
     chargerAttente();
   }catch(e){ REC.etat = "echec"; REC.info = "Envoi impossible : " + e.message + ". L'enregistrement reste sur le téléphone, réessaie avec une meilleure connexion."; }
   majRec();
@@ -895,8 +896,9 @@ async function envoyerFichier(f){
   if(f.size > 24 * 1024 * 1024){ REC.info = "Fichier trop lourd (24 Mo max). Enregistre plutôt depuis l'appli, qui découpe toute seule."; majRec(); return; }
   REC.etat = "envoi"; REC.info = "Envoi du fichier…"; majRec();
   try{
-    await envoyerPartie({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), titre, date: new Date(f.lastModified || Date.now()).toISOString()}, 0, f, true);
-    REC.etat = "repos"; REC.info = `« ${titre} » est envoyé.`; chargerAttente();
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    await envoyerPartie({id, titre, date: new Date(f.lastModified || Date.now()).toISOString()}, 0, f, true);
+    REC.etat = "repos"; REC.info = `« ${titre} » est envoyé.`; REC.range = {id, titre}; chargerAttente();
   }catch(e){ REC.etat = "repos"; REC.info = "Envoi impossible : " + e.message; }
   majRec();
 }
@@ -914,6 +916,52 @@ async function verifierEnregistrementLaisse(){
   if(c){ REC.etat = c.fini ? "echec" : "interrompu"; REC.cumul = c.duree || 0; REC.info = c.fini ? "Un cours terminé n'a pas pu être envoyé." : "Un enregistrement a été coupé avant la fin. Tu peux le reprendre ou l'envoyer tel quel."; REC.titre = c.titre; majRec(); }
 }
 
+
+/* ---------- Où un titre sera rangé (même règle que le robot : outils/import_telegram.py) ---------- */
+function prevoirRangement(titre){
+  const t = String(titre || "").trim(); if(!t) return null;
+  const n = norm(t);
+  const ajoutes = D.toutes.filter(s => s.id.startsWith("l-") && !D.classement.some(c => c[0] === s.id)).map(s => [s.id, s.nom, [norm(s.nom)]]);
+  const c = [...ajoutes, ...D.classement].find(([, , motifs]) => motifs.some(m => n.includes(m)));
+  const m = /^(\d{1,4})\s*(?:\/\d+)?\s*((?:et\s+)?fin)?/i.exec(t);
+  return {serie: c ? c[0] : "conferences", nom: c ? c[1] : "Conférences et rappels", reconnu: !!c,
+          num: c && m ? +m[1] : null, fin: !!(m && m[2]) || /\bet fin\b/i.test(t)};
+}
+function lignePrevision(titre){
+  const p = prevoirRangement(titre); if(!p) return "";
+  return p.reconnu
+    ? `→ Sera rangé dans <b>${esc(p.nom)}</b>${p.num != null ? ` · n° ${p.num}` : " · <span style=\"color:#c0504d\">sans numéro</span>"}${p.fin ? " · dernier cours du livre" : ""}`
+    : `→ <span style="color:#c0504d">Aucun livre reconnu</span> : il ira dans « Conférences et rappels ». Mets le nom du livre dans le titre, ou corrige-le ensuite.`;
+}
+function carteRange(){
+  const r = REC.range; if(!r) return "";
+  const p = prevoirRangement(r.titre);
+  setTimeout(() => {
+    const b = document.getElementById("rgOk"), m = document.getElementById("rgMsg"), i = document.getElementById("rgTitre"), v = document.getElementById("rgPrev");
+    if(i) i.oninput = () => v.innerHTML = lignePrevision(i.value);
+    const f = document.getElementById("rgFermer"); if(f) f.onclick = () => { REC.range = null; majRec(); };
+    if(b) b.onclick = async () => {
+      const titre = i.value.trim(); if(!titre) return;
+      b.disabled = true; m.textContent = "Enregistrement…";
+      try{ await appelSami(`/cours/${r.id}/titre`, {titre}); r.titre = titre; const a = (D.attente || []).find(x => x.id === r.id); if(a) a.titre = titre; majRec(); }
+      catch(err){ b.disabled = false; m.textContent = "Échec : " + err.message + "."; }
+    };
+  });
+  return `<div class="annonce" style="margin-top:12px">
+    <span class="tag">Cours envoyé</span>
+    <p>« ${esc(r.titre)} »</p>
+    <p class="small" style="font-weight:400;margin-top:4px">${p.reconnu ? `Rangé dans <b>${esc(p.nom)}</b>${p.num != null ? ` · n° ${p.num}` : ""} d'ici une demi-heure. Il est déjà écoutable.` : `Aucun livre reconnu dans le titre : il ira dans « Conférences et rappels ». Corrige le titre maintenant pour le ranger dans son livre :`}</p>
+    ${p.reconnu ? "" : `<input id="rgTitre" value="${esc(r.titre)}" style="display:block;width:100%;margin:8px 0 4px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
+      <p class="small" id="rgPrev" style="font-weight:400">${lignePrevision(r.titre)}</p>`}
+    <div class="btns" style="margin-top:10px">
+      <a class="btn gold" href="#nouveau-${r.id}">Écouter</a>
+      ${p.reconnu ? `<a class="btn line" href="#serie-${esc(p.serie)}">Voir le livre</a>` : `<button class="btn gold" id="rgOk">Renommer</button>`}
+      <button class="btn line" id="rgFermer">OK</button>
+    </div>
+    <p id="rgMsg" class="small" style="font-weight:400"></p>
+  </div>`;
+}
+
 function carteEnregistrement(){
   const e = REC.etat, d = hms(dureeRec());
   const boutons = {
@@ -928,11 +976,13 @@ function carteEnregistrement(){
     <h3>Enregistrer un cours</h3>
     <label class="small muted" for="rtitre">Titre du cours, comme sur Telegram</label>
     <input id="rtitre" value="${esc(REC.titre || "")}" placeholder="58 Lecture et étude du Muwatta de l'imam Malik ibn Anas - Livre du jeûne" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
+    <p class="small" id="rprev" style="margin:-4px 0 8px;line-height:1.4">${lignePrevision(REC.titre)}</p>
     <p class="small muted" style="opacity:.75;margin:-4px 0 10px;line-height:1.45">Numéro du cours, puis le livre et son auteur, puis le passage étudié. Le numéro en premier permet de ranger le cours tout seul dans son livre.<br>Dernier cours d'un livre : « 12 ET FIN … ». Prêche : « 131 Le mérite de … - Sermon du vendredi ».</p>
     ${e !== "repos" ? `<p style="font-size:30px;font-weight:600;margin:4px 0;font-variant-numeric:tabular-nums"><span style="color:${e === "enregistre" ? "#d64545" : "var(--gold)"}">●</span> <span id="rtemps">${d}</span> <span class="small muted">${{enregistre: "enregistrement", pause: "en pause", interrompu: "coupé", envoi: "envoi", echec: "non envoyé", fin: "fin"}[e]}</span></p>` : ""}
     <div class="btns">${boutons}</div>
     ${e === "repos" ? `<label class="btn line" style="margin-top:8px;display:inline-flex">Envoyer un fichier audio<input id="rfich" type="file" accept="audio/*" hidden></label>` : ""}
-    <p id="rinfo" class="small" style="margin-top:10px;color:var(--gold)">${esc(REC.info)}</p>
+    <p id="rinfo" class="small" style="margin-top:10px;color:var(--gold)">${REC.range && e === "repos" ? "" : esc(REC.info)}</p>
+    ${e === "repos" ? carteRange() : ""}
     ${e === "repos" || e === "enregistre" ? `<p class="small muted" style="margin-top:8px">Avant de commencer : active « Ne pas déranger » pour éviter les appels. Sur Android, tu peux verrouiller l'écran, l'enregistrement continue. Sur iPhone, laisse l'appli ouverte : l'écran reste allumé tout seul. Dans tous les cas, si le micro a été coupé, l'appli te le dira en revenant.</p>` : ""}
   </div>`;
 }
@@ -950,7 +1000,7 @@ function brancherRec(){
   const on = (id, f) => { const b = document.getElementById(id); if(b) b.onclick = f; };
   on("rgo", commencerCours); on("rpause", pauseCours); on("rfin", terminerCours); on("rrep", reprendreCours); on("renv", envoyerCours); on("rsup", abandonnerCours);
   const f = document.getElementById("rfich"); if(f) f.onchange = () => f.files[0] && envoyerFichier(f.files[0]);
-  const t = document.getElementById("rtitre"); if(t) t.oninput = () => REC.titre = t.value;
+  const t = document.getElementById("rtitre"); if(t) t.oninput = () => { REC.titre = t.value; const v = document.getElementById("rprev"); if(v) v.innerHTML = lignePrevision(t.value); };
 }
 function bandeauRec(){
   let b = document.getElementById("bandeauRec");
@@ -1133,7 +1183,15 @@ function blocAttente(montres = new Set()){
 }
 function vueNouveau(id){
   const c = (D.attente || []).find(x => x.id === id);
-  if(!c) return `<div class="empty">Ce cours vient d'être rangé dans son livre. <a href="#accueil">Retour à l'accueil</a></div>`;
+  if(!c){
+    const trouver = () => D.epsTous.find(e => e.source === "appli" && (e.audio || "").endsWith(`-${id.slice(-6)}.mp3`));
+    const ep = trouver();
+    if(ep){ setTimeout(() => location.replace("#ep-" + ep.id)); return ""; }
+    setTimeout(async () => {
+      try{ const eps = await (await fetch("data/episodes.json", {cache: "no-store"})).json(); D.epsTous = eps; indexer(); chargerCorrections(); const e2 = trouver(); if(e2) location.replace("#ep-" + e2.id); }catch(e){}
+    });
+    return `<div class="empty">Ce cours vient d'être rangé dans son livre, recherche de sa page… <a href="#accueil">Retour à l'accueil</a></div>`;
+  }
   return `<div class="card"><span class="tag">Tout juste enregistré</span>
     <h2 style="margin:10px 0 4px">${esc(c.titre || "Cours")}</h2>
     <div class="meta"><span>${dateFr(c.date.slice(0, 10))}</span></div>
@@ -1304,7 +1362,7 @@ async function charger(nom, defaut){
 }
 (async () => {
   const [ser, eps, conf, textes, pdfs, api, valid] = await Promise.all([charger("series.json", {themes: [], series: []}), charger("episodes.json", []), charger("config.json", {}), charger("textes.json", {}), charger("pdfs.json", []), charger("api.json", {}), charger("validations.json", {})]);
-  D.themes = ser.themes; D.toutes = ser.series; D.epsTous = eps; D.conf = conf; D.textes = textes || {}; D.pdfs = new Set(pdfs || []); D.api = (api && api.url) || ""; D.valid = valid || {};
+  D.themes = ser.themes; D.toutes = ser.series; D.classement = ser.classement || []; D.epsTous = eps; D.conf = conf; D.textes = textes || {}; D.pdfs = new Set(pdfs || []); D.api = (api && api.url) || ""; D.valid = valid || {};
   indexer();
   if(!D.eps.length){ $app.innerHTML = '<div class="empty">Impossible de charger les cours. Vérifie ta connexion.</div>'; return; }
   if(/^#ep-/.test(location.hash)) document.getElementById("porte")?.remove(); else ouvrirPorte();

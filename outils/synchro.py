@@ -134,7 +134,9 @@ def maj_series(liste):
             if anciennes.get(s["id"], {}).get("support"):
                 d["support"] = anciennes[s["id"]]["support"]
             pub.append(d)
-    fs.write_text(json.dumps({"themes": THEMES, "series": pub}, ensure_ascii=False, indent=1), encoding="utf-8")
+    # Ordre et motifs de classement : l'appli annonce à Sami, dès le titre tapé, où le cours sera rangé
+    classement = [[s["id"], s["nom"], s["motifs"]] for s in SERIES if s["motifs"]]
+    fs.write_text(json.dumps({"themes": THEMES, "series": pub, "classement": classement}, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 def pistes_soundcloud():
