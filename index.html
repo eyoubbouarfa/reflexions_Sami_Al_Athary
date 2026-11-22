@@ -145,7 +145,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
 <body>
 <div class="porte" id="porte" role="dialog" aria-label="Entrée"><div class="in" id="porteIn"></div></div>
 <header class="top" id="top">
-  <button class="back" onclick="history.back()" aria-label="Retour">‹</button>
+  <button class="back" onclick="retour()" aria-label="Retour">‹</button>
   <img src="icons/logo.png" alt="">
   <div><h1>Sami al Athary</h1><small>Science · Rappels · Bénéfices</small></div>
 </header>
@@ -484,8 +484,8 @@ function vueEpisode(id){
   <h2>Notes du cours</h2>
   ${t ? `<div class="card notes">${t.html}</div>` : (D.pdfs && D.pdfs.has(e.id) ? "" : `<div class="card empty" style="text-align:left">Pas encore de PDF pour ce cours. Les nouveaux cours ont le leur automatiquement, dans l'heure qui suit leur publication.</div>`)}
   <div class="btns noprint" style="justify-content:space-between">
-    ${prec ? `<a class="btn line" href="#ep-${prec.id}">‹ ${prec.num != null ? "n° " + prec.num : "Précédent"}</a>` : "<span></span>"}
-    ${suiv ? `<a class="btn line" href="#ep-${suiv.id}">${suiv.num != null ? "n° " + suiv.num : "Suivant"} ›</a>` : ""}
+    ${prec ? `<a class="btn line" data-remplace href="#ep-${prec.id}">‹ ${prec.num != null ? "n° " + prec.num : "Précédent"}</a>` : "<span></span>"}
+    ${suiv ? `<a class="btn line" data-remplace href="#ep-${suiv.id}">${suiv.num != null ? "n° " + suiv.num : "Suivant"} ›</a>` : ""}
   </div>
   ${/t\.me\//.test(e.post) ? `<footer><a href="${esc(e.post)}" target="_blank" rel="noopener">Voir la publication sur Telegram</a></footer>` : ""}`;
 }
@@ -508,6 +508,24 @@ function vueDirect(){
 function vueIntrouvable(){ return `<div class="empty">Page introuvable. <a href="#accueil">Retour à l'accueil</a></div>`; }
 
 /* ---------- navigation ---------- */
+// Le chevron du haut remonte d'un niveau (cours → livre → thème → accueil),
+// quel que soit le nombre de cours parcourus avec les boutons n° précédent / suivant.
+function parent(){
+  const h = (location.hash || "#accueil").slice(1), i = h.indexOf("-");
+  const route = i < 0 ? h : h.slice(0, i), arg = i < 0 ? "" : h.slice(i + 1);
+  if(route === "ep"){ const e = D.eps.find(x => String(x.id) === arg); return e ? "serie-" + e.serie : "themes"; }
+  if(route === "serie"){ const s = D.serie.get(arg); return !s ? "themes" : s.type === "preche" ? "preches" : "theme-" + s.theme; }
+  if(route === "theme") return "themes";
+  return "accueil";
+}
+function retour(){ location.hash = "#" + parent(); }
+// Passer d'un cours au suivant ne s'empile pas dans l'historique (le retour du téléphone remonte aussi au livre)
+document.addEventListener("click", ev => {
+  const a = ev.target.closest && ev.target.closest("a[data-remplace]");
+  if(!a) return;
+  ev.preventDefault(); location.replace(a.getAttribute("href"));
+});
+
 function afficher(){
   const h = (location.hash || "#accueil").slice(1);
   const [route, ...rest] = h.split("-"); const arg = rest.join("-");
