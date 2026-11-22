@@ -230,6 +230,35 @@ def construire(ep_id):
                            ("LEFTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
     h += [m, Spacer(1, 2 * mm)]
 
+    ia_f = DATA / "ia" / f"{ep_id}.json"
+    if ia_f.exists():
+        ia = json.loads(ia_f.read_text(encoding="utf-8"))
+        esc = lambda x: str(x).replace("&", "&amp;").replace("<", "&lt;")
+        h += [Paragraph("Synthèse du cours", S["h2"])]
+        avert = Table([[Paragraph("<b>Synthèse rédigée automatiquement par une IA, à partir de la seule transcription.</b> "
+                                  "Elle n'ajoute aucune source extérieure mais peut mal comprendre ou résumer. "
+                                  "Non relue par Sami al Athary : l'audio fait foi.", S["mention"])]], colWidths=[170 * mm])
+        avert.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FBF3E3")), ("BOX", (0, 0), (-1, -1), .6, colors.HexColor(OR)),
+                                   ("LEFTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
+        h += [avert, Spacer(1, 2 * mm)]
+        if ia.get("resume"):
+            h.append(Paragraph(esc(ia["resume"]), S["corps"]))
+        if ia.get("plan"):
+            h += [Paragraph("Plan", S["h3"])] + [Paragraph(f"{i}. {esc(x)}", S["corps"]) for i, x in enumerate(ia["plan"], 1)]
+        if ia.get("points"):
+            h += [Paragraph("Enseignements principaux", S["h3"])] + [Paragraph(f"• {esc(x)}", S["corps"]) for x in ia["points"]]
+        refs = [r for r in ia.get("references", []) if r.get("cite")]
+        if refs:
+            noms = {"coran": "Coran", "hadith": "Hadith", "savant": "Savant", "livre": "Livre"}
+            rt = Table([[Paragraph("<b>Type</b>", S["petit"]), Paragraph("<b>Cité par l'enseignant</b>", S["petit"]), Paragraph("<b>Moment</b>", S["petit"])]] +
+                       [[Paragraph(noms.get(r.get("type"), "—"), S["mention"]), Paragraph(esc(r["cite"]), S["mention"]), Paragraph(esc(r.get("moment", "")), S["petit"])] for r in refs[:40]],
+                       colWidths=[22 * mm, 128 * mm, 20 * mm])
+            rt.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, 0), .8, colors.HexColor(OR)), ("LINEBELOW", (0, 1), (-1, -1), .3, colors.HexColor("#DDDDDD")),
+                                    ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
+            h += [Paragraph("Références citées dans le cours", S["h3"]),
+                  Paragraph("Telles que l'enseignant les mentionne. Leur authenticité n'est pas évaluée ici.", S["petit"]), rt]
+        h.append(Spacer(1, 3 * mm))
+
     if ep["num"] is not None:
         h += [Paragraph("Place du cours dans la série", S["h2"]), Image(str(tmp / "serie.png"), width=170 * mm, height=29 * mm)]
     part_ar = sum(s["fin"] - s["debut"] for s in segs if s["arabe"]) / max(duree, 1)

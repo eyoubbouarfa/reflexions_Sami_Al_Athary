@@ -1,0 +1,39 @@
+name: Synthèse IA des cours (essai)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: "Numéros des cours (déjà transcrits), séparés par des espaces"
+        required: true
+
+permissions:
+  contents: write
+  models: read
+
+jobs:
+  enrichir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q reportlab matplotlib
+      - name: Récupérer les transcriptions
+        run: |
+          mkdir -p data/transcriptions
+          for i in ${{ inputs.ids }}; do gh release download cours -p "$i.json" -D data/transcriptions --clobber; done
+      - name: Synthèse
+        run: python outils/enrichir.py ${{ inputs.ids }}
+      - name: Refaire les PDF et les ranger
+        run: |
+          for i in ${{ inputs.ids }}; do
+            python outils/cours_pdf.py $i
+            cp data/ia/$i.json "data/ia/$i.ia.json"
+            gh release upload cours "data/pdf/$i.pdf" "data/ia/$i.ia.json" --clobber
+          done
