@@ -240,10 +240,14 @@ function coucher(date, lat, lon){
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0) + minutesUTC * 6e4);
   return d.toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris"}).replace(":", " h ");
 }
+// Horaire des cours selon la saison (hiver : autour de l'Icha ; été : entre Maghrib et Icha)
+const momentCours = (h, ete = heureEte()) => (ete ? h.cours_ete : h.cours_hiver) || h.cours_moment || "";
 function infoDuJour(){
   const c = D.conf, now = new Date(), j = new Date().toLocaleDateString("fr-FR", {weekday: "long", timeZone: "Europe/Paris"});
   if(!c.lat) return "";
-  if(["mardi", "jeudi", "dimanche"].includes(j)) return `Ce soir : cours après Maghrib, vers <b>${coucher(now, c.lat, c.lon)}</b>`;
+  if(["mardi", "jeudi", "dimanche"].includes(j)) return heureEte()
+    ? `Ce soir : cours entre Maghrib et Icha, Maghrib vers <b>${coucher(now, c.lat, c.lon)}</b>`
+    : `Ce soir : cours de <b>30 min avant à 30 min après Icha</b>`;
   if(j === "vendredi") return `Aujourd'hui : prêche du vendredi à <b>${esc(heureEte() ? c.horaires.jumua_ete : c.horaires.jumua_hiver)}</b>`;
   return "";
 }
@@ -256,7 +260,7 @@ function vueBienvenue(){
     Chaque cours suit un livre de science, lu et expliqué passage après passage.</p>
     ${D.conf.adresse ? `<p class="adresse">📍 ${esc(D.conf.adresse)}</p>` : ""}
     <div class="horaires">
-      <div><span class="tag">Cours</span><b>${esc(h.cours_jours || "")}</b><span>${esc(h.cours_moment || "")}</span></div>
+      <div><span class="tag">Cours</span><b>${esc(h.cours_jours || "")}</b><span>${esc(momentCours(h, ete))}</span><span>${ete ? "horaire d'été" : "horaire d'hiver"} · ${esc(momentCours(h, !ete).replace(/^De /, "de ").replace(/^Entre /, "entre "))} ${ete ? "en hiver" : "en été"}</span></div>
       <div><span class="tag">Prêche du vendredi</span><b>${esc(ete ? h.jumua_ete : h.jumua_hiver)}</b><span>${ete ? "horaire d'été" : "horaire d'hiver"} · ${esc(ete ? h.jumua_hiver : h.jumua_ete)} ${ete ? "en hiver" : "en été"}</span></div>
     </div>
     ${infoDuJour() ? `<p class="ce-jour">${infoDuJour()}</p>` : ""}
@@ -608,7 +612,7 @@ function ouvrirPorte(){
     <div class="href">${esc(h.ref)}</div>
     <div class="porte-annonce" id="porte-annonce" ${D.annonce ? "" : "hidden"}>${D.annonce ? `<b>Annonce</b> · ${esc(D.annonce.texte)}` : ""}</div>
     <div class="bas"><div class="infos"><span>Cours donnés à la <b>${esc(D.conf.mosquee || "mosquée")}</b><br>
-      <b>${esc(hr.cours_jours || "")}</b>, ${esc((hr.cours_moment || "").replace(/^Entre/, "entre"))}<br>
+      <b>${esc(hr.cours_jours || "")}</b>, ${esc(momentCours(hr, ete).replace(/^Entre/, "entre").replace(/^De /, "de "))}<br>
       Prêche du vendredi à <b>${esc(ete ? hr.jumua_ete : hr.jumua_hiver)}</b>
       ${D.conf.adresse ? `<span class="adr">${esc(D.conf.adresse)}</span>` : ""}</span></div>
     <button class="entrer" id="entrer" aria-label="Entrer"><span class="ring"><i></i></span><span class="lettres">ENTRER</span></button></div>`;
@@ -685,7 +689,7 @@ function vuePrive(){
     <h3>Annonce sur l'accueil</h3>
     ${a ? `<div class="annonce" style="margin:10px 0"><p>${esc(a.texte)}</p><p class="small muted">Publiée par ${esc(a.par)}${a.fin ? ` · affichée jusqu'au ${dateFr(a.fin)} inclus` : ""}</p></div>` : `<p class="muted small" style="margin:6px 0 10px">Aucune annonce affichée en ce moment.</p>`}
     <label class="small muted" for="ptexte">Nouvelle annonce</label>
-    <textarea id="ptexte" rows="3" maxlength="500" placeholder="Exemple : Pas de cours ce mardi. Reprise jeudi après Maghrib." style="width:100%;margin:6px 0 10px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px"></textarea>
+    <textarea id="ptexte" rows="3" maxlength="500" placeholder="Exemple : Pas de cours ce mardi. Reprise jeudi à l'heure habituelle." style="width:100%;margin:6px 0 10px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px"></textarea>
     <label class="small muted" for="pfin">Afficher jusqu'au (facultatif)</label>
     <input id="pfin" type="date" style="display:block;width:100%;margin:6px 0 4px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
     <div class="btns"><button class="btn gold" id="publier">Publier</button>${a ? '<button class="btn line" id="retirer">Retirer l\'annonce</button>' : ""}</div>

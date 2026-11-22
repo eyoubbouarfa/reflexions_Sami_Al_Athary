@@ -10,9 +10,10 @@
  "mosquee": "Mosquée An-Nour",
  "horaires": {
   "cours_jours": "Mardi, jeudi et dimanche",
-  "cours_moment": "Entre Maghrib et Icha",
   "jumua_hiver": "13 h",
-  "jumua_ete": "14 h"
+  "jumua_ete": "14 h",
+  "cours_hiver": "De 30 min avant à 30 min après Icha",
+  "cours_ete": "Entre Maghrib et Icha"
  },
  "adresse": "18 rue d'Aubrac, 63100 Clermont-Ferrand",
  "lat": 45.7814,
