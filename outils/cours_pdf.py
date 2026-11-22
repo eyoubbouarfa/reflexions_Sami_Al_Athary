@@ -198,7 +198,7 @@ def construire(ep_id):
 
     sortie = DATA / "pdf" / f"{ep_id}.pdf"
     doc = SimpleDocTemplate(str(sortie), pagesize=A4, leftMargin=20 * mm, rightMargin=20 * mm, topMargin=24 * mm, bottomMargin=18 * mm,
-                            title=f"{serie['nom']} n° {ep['num']}", author="Sami al Athary")
+                            title=f"{serie['nom']}" + (f" n° {ep['num']}" if ep["num"] is not None else f" · {ep['titre']}"), author="Sami al Athary")
     titre_cours = ESSENTIEL(ep["titre"]) or (f"Cours n° {ep['num']}" if ep["num"] is not None else serie["nom"])
     h = []
     logo = RACINE / "icons" / "logo.png"
@@ -230,7 +230,8 @@ def construire(ep_id):
                            ("LEFTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
     h += [m, Spacer(1, 2 * mm)]
 
-    h += [Paragraph("Place du cours dans la série", S["h2"]), Image(str(tmp / "serie.png"), width=170 * mm, height=29 * mm)]
+    if ep["num"] is not None:
+        h += [Paragraph("Place du cours dans la série", S["h2"]), Image(str(tmp / "serie.png"), width=170 * mm, height=29 * mm)]
     part_ar = sum(s["fin"] - s["debut"] for s in segs if s["arabe"]) / max(duree, 1)
     h += [KeepTogether([Paragraph("Déroulé du cours", S["h2"]),
                         Paragraph(f"{len(blocs)} parties · environ {round(part_ar * 100)} % du temps en arabe (lectures, versets, hadiths).", S["petit"]),
@@ -268,7 +269,7 @@ def construire(ep_id):
         c.setFillColor(colors.HexColor(VERT)); c.rect(0, A4[1] - 12 * mm, A4[0], 12 * mm, fill=1, stroke=0)
         c.setFillColor(colors.HexColor(OR)); c.rect(0, A4[1] - 12.8 * mm, A4[0], .8 * mm, fill=1, stroke=0)
         c.setFillColor(colors.white); c.setFont("Serif-B", 10); c.drawString(20 * mm, A4[1] - 7.8 * mm, "Sami al Athary")
-        c.setFont("Sans", 8); c.drawRightString(A4[0] - 20 * mm, A4[1] - 7.8 * mm, f"{ESSENTIEL(serie['nom'])[:60]} · n° {ep['num']}")
+        c.setFont("Sans", 8); c.drawRightString(A4[0] - 20 * mm, A4[1] - 7.8 * mm, f"{ESSENTIEL(serie['nom'])[:60]}" + (f" · n° {ep['num']}" if ep["num"] is not None else ""))
         c.setFillColor(colors.HexColor(GRIS)); c.setFont("Sans", 7.5)
         pied = "Validé par Sami al Athary" if validation else "Transcription automatique · sans contrôle de Sami al Athary · l'audio fait foi"
         c.drawString(20 * mm, 10 * mm, pied); c.drawRightString(A4[0] - 20 * mm, 10 * mm, f"Page {d.page}")
