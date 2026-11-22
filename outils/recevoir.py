@@ -93,7 +93,7 @@ def main():
     subprocess.run(["gh", "release", "view", ETIQUETTE], capture_output=True).returncode == 0 or subprocess.run(
         ["gh", "release", "create", ETIQUETTE, "--title", "Enregistrements des cours", "--notes",
          "Cours enregistrés depuis l'appli. Ne pas supprimer : l'appli lit les fichiers ici."], check=True)
-    ranges = []
+    ranges, nouveaux = [], []
     for c in attente:
         with tempfile.TemporaryDirectory() as d:
             parties = []
@@ -116,10 +116,12 @@ def main():
         eps.insert(0, {"id": ident, "serie": s["id"], "num": num, "titre": sous, "fin": fin, "audio": audio,
                        "post": post or audio, "date": c["date"][:10], "source": "appli"})
         ranges.append(c)
+        nouveaux.append(ident)
         print(f"Rangé : {c['titre']} → {s['nom']}{f' n° {num}' if num is not None else ''}")
     FICHIER.write_text(json.dumps(eps, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     subprocess.run(["python", str(RACINE / "outils" / "synchro.py"), "--series-seules"], check=False)
     Path(os.environ.get("RANGES", "/tmp/ranges.txt")).write_text("\n".join(c["id"] for c in ranges))
+    Path(os.environ.get("NOUVEAUX", "/tmp/nouveaux.txt")).write_text(" ".join(str(i) for i in nouveaux))
 
 
 if __name__ == "__main__":

@@ -482,7 +482,7 @@ function vueEpisode(id){
     </div>
   </div>
   <h2>Notes du cours</h2>
-  ${t ? `<div class="card notes">${t.html}</div>` : `<div class="card empty" style="text-align:left">Les notes de ce cours ne sont pas encore disponibles. Elles sont publiées après relecture par l'enseignant.</div>`}
+  ${t ? `<div class="card notes">${t.html}</div>` : (D.pdfs && D.pdfs.has(e.id) ? "" : `<div class="card empty" style="text-align:left">Pas encore de PDF pour ce cours. Les nouveaux cours ont le leur automatiquement, dans l'heure qui suit leur publication.</div>`)}
   <div class="btns noprint" style="justify-content:space-between">
     ${prec ? `<a class="btn line" href="#ep-${prec.id}">‹ ${prec.num != null ? "n° " + prec.num : "Précédent"}</a>` : "<span></span>"}
     ${suiv ? `<a class="btn line" href="#ep-${suiv.id}">${suiv.num != null ? "n° " + suiv.num : "Suivant"} ›</a>` : ""}

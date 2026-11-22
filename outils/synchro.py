@@ -10,6 +10,7 @@ Lancé chaque jour par GitHub (voir .github/workflows/synchro.yml), ou à la mai
 """
 import html
 import json
+import os
 import re
 import subprocess
 import sys
@@ -154,6 +155,7 @@ def main():
     dernier = max((i for i in eps if i < 1_000_000), default=0)
 
     ajouts, maj, inconnus = 0, 0, []
+    nouveaux = []
     posts_appli = {e["post"] for e in eps.values() if e.get("source") == "appli"}
     appli = {(e["serie"], e["num"]): e for e in eps.values() if e.get("source") == "appli" and e["num"] is not None}
     for x in posts_telegram(dernier, tout):
@@ -176,6 +178,7 @@ def main():
             inconnus.append((e["id"], titre))
         eps[e["id"]] = e
         ajouts += 1
+        nouveaux.append(e["id"])
 
     # SoundCloud : épisodes numérotés jamais postés sur Telegram
     connus = {(e["serie"], e["num"]) for e in eps.values() if e["num"] is not None}
@@ -196,12 +199,15 @@ def main():
                       "audio": url, "post": url, "date": date, "source": "soundcloud"}
         connus.add((s["id"], num))
         ajouts += 1
+        nouveaux.append(ident)
 
     liste = sorted(eps.values(), key=lambda e: (e.get("date") or "0000", e["id"] if e["id"] < 1_000_000 else 0), reverse=True)
     FICHIER.write_text(json.dumps(liste, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
     maj_series(liste)
 
+    # Liste des nouveaux cours : leur PDF est fabriqué ensuite automatiquement
+    Path(os.environ.get("NOUVEAUX", "/tmp/nouveaux.txt")).write_text(" ".join(str(i) for i in nouveaux))
     print(f"{ajouts} cours ajoutés, {maj} dates complétées, {len(liste)} au total.")
     for i, t in inconnus:
         print(f"  non classé (Conférences) : {i} {t}")

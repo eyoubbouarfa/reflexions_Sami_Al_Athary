@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: recevoir
@@ -50,3 +51,13 @@ jobs:
           API=$(jq -r .url data/api.json)
           KEY=$(python -c "import sys;sys.path.insert(0,'outils');from recevoir import cle_robot;print(cle_robot())")
           for id in $(cat "$RANGES" 2>/dev/null); do curl -sf -X DELETE -H "X-Robot: $KEY" "$API/cours/$id"; echo; done
+      - if: steps.q.outputs.n != '0'
+        name: Lancer la fabrication des PDF des nouveaux cours
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          IDS=$(cat /tmp/nouveaux.txt 2>/dev/null | xargs)
+          if [ -n "$IDS" ]; then
+            gh api -X POST "repos/${{ github.repository }}/actions/workflows/cours-pdf.yml/dispatches" -f ref=main -f "inputs[ids]=$IDS"
+            echo "PDF demandés : $IDS"
+          fi
