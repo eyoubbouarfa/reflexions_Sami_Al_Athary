@@ -1,0 +1,34 @@
+name: PDF des anciens cours
+
+# Fabrique petit à petit le PDF des cours déjà publiés, du plus récent au plus ancien.
+# Un lot de 12 cours toutes les 3 heures, seulement si le lot précédent est terminé.
+on:
+  schedule:
+    - cron: "40 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  lancer:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lot suivant
+        run: |
+          EN_COURS=$(gh api "repos/${{ github.repository }}/actions/workflows/cours-pdf.yml/runs?status=in_progress" -q '.total_count')
+          EN_ATTENTE=$(gh api "repos/${{ github.repository }}/actions/workflows/cours-pdf.yml/runs?status=queued" -q '.total_count')
+          if [ "$EN_COURS" != "0" ] || [ "$EN_ATTENTE" != "0" ]; then echo "Un lot tourne déjà."; exit 0; fi
+          IDS=$(python3 -c "
+          import json
+          faits = set(json.load(open('data/pdfs.json')))
+          eps = [e for e in json.load(open('data/episodes.json')) if e['id'] not in faits]
+          eps.sort(key=lambda e: (e.get('date') or '', e['id']), reverse=True)
+          print(' '.join(str(e['id']) for e in eps[:12]))")
+          if [ -z "$IDS" ]; then echo "Tous les cours ont leur PDF."; exit 0; fi
+          gh api -X POST "repos/${{ github.repository }}/actions/workflows/cours-pdf.yml/dispatches" -f ref=main -f "inputs[ids]=$IDS"
+          echo "Lot lancé : $IDS"
