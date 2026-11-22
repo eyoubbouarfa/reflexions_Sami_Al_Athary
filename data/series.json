@@ -130,7 +130,7 @@
    "auteur": "",
    "type": "cours",
    "statut": "terminée",
-   "nb": 12
+   "nb": 21
   },
   {
    "id": "decouverte-messager",
@@ -290,7 +290,7 @@
    "auteur": "Ibn abi Dounya",
    "type": "cours",
    "statut": "terminée",
-   "nb": 10
+   "nb": 20
   },
   {
    "id": "hommage-savoir",
