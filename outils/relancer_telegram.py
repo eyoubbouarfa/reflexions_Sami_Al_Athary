@@ -27,7 +27,7 @@ def main():
         if subprocess.run(["gh", "release", "download", "cours", "-p", nom, "-D", "/tmp", "--clobber"]).returncode:
             continue
         titre = (f"{e['num']} " if e.get("num") is not None else "") + (e.get("titre") or "Cours")
-        r = subprocess.run(["curl", "-sS", "-m", "600", "-F", f"chat_id=@{CANAL}", "-F", f"caption={titre}\n\nÉcouter et lire le cours dans l'appli : https://eyoubbouarfa.github.io/savoir_Sami_Al_Athary/#ep-{e['id']}", "-F", f"title={titre}",
+        r = subprocess.run(["curl", "-sS", "-m", "600", "-F", f"chat_id=@{CANAL}", "-F", f"caption={titre}\n\nÉcouter et lire le cours dans l'appli (sans rien installer) : https://eyoubbouarfa.github.io/savoir_Sami_Al_Athary/#ep-{e['id']}", "-F", f"title={titre}",
                             "-F", "performer=Sami al Athary", "-F", f"audio=@/tmp/{nom}",
                             f"https://api.telegram.org/bot{jeton}/sendAudio"], capture_output=True, text=True)
         try:

@@ -1088,7 +1088,7 @@ function compter(chemin, titre, evenement){
 }
 function compterVue(){
   const h = (location.hash || "#accueil").slice(1), [route, ...r] = h.split("-"), arg = r.join("-");
-  if(route === "ep"){ const e = D.byId.get(+arg); if(e){ const s = D.serie.get(e.serie); compter(`/cours/${s.id}/${e.num ?? e.id}`, `${s.nom} · ${e.num != null ? "n° " + e.num : titreEp(e)}`); } return; }
+  if(route === "ep"){ const e = D.byId.get(parseInt(arg, 10)); if(e){ const s = D.serie.get(e.serie); compter(`/cours/${s.id}/${e.num ?? e.id}`, `${s.nom} · ${e.num != null ? "n° " + e.num : titreEp(e)}`); } return; }
   if(route === "serie"){ const s = D.serie.get(arg); if(s) compter(`/serie/${s.id}`, s.nom); return; }
   if(route === "theme"){ compter(`/theme/${arg}`, `Thème : ${arg}`); return; }
   compter(`/onglet/${route}`, `Onglet ${route}`);
@@ -1098,6 +1098,33 @@ document.addEventListener("click", ev => {
   if(/\/pdf\/\d+\.pdf$/.test(a.getAttribute("href") || "")) compter("pdf-" + a.getAttribute("href").split("/").pop(), "Téléchargement PDF", true);
   else if(/soundcloud|t\.me/.test(a.href) && /Écouter|SoundCloud/.test(a.textContent)) compter("ecoute-" + (location.hash.split("-")[1] || ""), "Écoute d'un cours", true);
 });
+
+/* ---------- Aide à l'installation : l'appli marche dans le navigateur ; on propose juste de l'installer ---------- */
+let invite = null;
+addEventListener("beforeinstallprompt", ev => { ev.preventDefault(); invite = ev; const b = document.getElementById("aideInstaller"); if(b) b.style.display = ""; });
+function aideInstallation(){
+  if(STANDALONE || document.getElementById("aideInstall")) return;
+  try{ const v = +localStorage.getItem("aideInstallVue") || 0; if(Date.now() - v < 14 * 864e5) return; }catch(e){}
+  const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const android = /Android/.test(ua), dansAppli = /Telegram|WhatsApp|Instagram|FBAN|FBAV|Line\//i.test(ua);
+  if(!ios && !android) return;
+  let etapes;
+  if(ios) etapes = (dansAppli ? "<li>Ouvre cette page dans <b>Safari</b> (bouton ⬆ ou ⋯, puis « Ouvrir dans Safari »).</li>" : "") +
+    "<li>Appuie sur <b>Partager</b> ⬆ (sur les iPhone récents, dans le menu <b>⋯</b> en bas).</li><li>Choisis <b>« Sur l'écran d'accueil »</b>, puis <b>Ajouter</b>.</li>";
+  else etapes = (dansAppli ? "<li>Ouvre cette page dans <b>Chrome</b> (menu ⋮, puis « Ouvrir dans Chrome »).</li>" : "") +
+    "<li>Appuie sur les <b>3 petits points ⋮</b> en haut à droite.</li><li>Choisis <b>« Ajouter à l'écran d'accueil »</b> ou <b>« Installer l'application »</b>.</li>";
+  const d = document.createElement("div"); d.id = "aideInstall";
+  d.style.cssText = "position:fixed;left:10px;right:10px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:40;background:var(--surface);color:var(--ink);border:1px solid var(--gold);border-radius:16px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:14px;line-height:1.45";
+  d.innerHTML = `<b style="font-size:15px">Garder l'appli sur ton téléphone</b>
+    <p class="muted" style="margin:4px 0 6px">Tu peux tout utiliser ici, sans rien installer. Pour la retrouver d'un geste, comme une vraie appli :</p>
+    <ol style="margin:0 0 8px 18px;padding:0">${etapes}</ol>
+    <div class="btns" style="margin-top:4px"><button class="btn gold" id="aideInstaller" style="${invite ? "" : "display:none"}">Installer</button><button class="btn line" id="aideFermer">Plus tard</button></div>`;
+  document.body.appendChild(d);
+  const fermer = () => { try{ localStorage.setItem("aideInstallVue", Date.now()); }catch(e){} d.remove(); };
+  document.getElementById("aideFermer").onclick = fermer;
+  document.getElementById("aideInstaller").onclick = async () => { if(invite){ invite.prompt(); try{ await invite.userChoice; }catch(e){} invite = null; } fermer(); };
+  compter("/aide-installation", "Aide à l'installation affichée", true);
+}
 
 /* ---------- chargement ---------- */
 async function charger(nom, defaut){
@@ -1110,8 +1137,9 @@ async function charger(nom, defaut){
   D.eps = D.eps.filter(e => D.serie.has(e.serie));
   D.eps.forEach(e => { D.byId.set(e.id, e); if(!D.bySerie.has(e.serie)) D.bySerie.set(e.serie, []); D.bySerie.get(e.serie).push(e); });
   if(!D.eps.length){ $app.innerHTML = '<div class="empty">Impossible de charger les cours. Vérifie ta connexion.</div>'; return; }
-  ouvrirPorte();
+  if(/^#ep-/.test(location.hash)) document.getElementById("porte")?.remove(); else ouvrirPorte();
   afficher();
+  setTimeout(aideInstallation, 2500);
   chargerAnnonce();
   chargerAttente();
   compter(STANDALONE ? "/ouverture/appli-installee" : "/ouverture/navigateur", STANDALONE ? "Ouverture depuis l'icône" : "Ouverture dans le navigateur");

@@ -49,7 +49,7 @@ APPLI = "https://eyoubbouarfa.github.io/savoir_Sami_Al_Athary/"
 
 def legende(titre, ident):
     """Titre du cours, puis le lien vers l'appli (texte du cours, PDF, lecture au bon moment)."""
-    return f"{titre}\n\nÉcouter et lire le cours dans l'appli : {APPLI}#ep-{ident}" if ident else titre
+    return f"{titre}\n\nÉcouter et lire le cours dans l'appli (sans rien installer) : {APPLI}#ep-{ident}" if ident else titre
 
 
 def alerte(texte):
