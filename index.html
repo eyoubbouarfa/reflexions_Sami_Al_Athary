@@ -35,6 +35,16 @@ header.top h1{font:600 21px/1.1 var(--display);letter-spacing:.3px}
 header.top small{display:block;font:500 11px var(--body);color:var(--gold-2);letter-spacing:1.4px;text-transform:uppercase;margin-top:2px}
 header.top .back{width:36px;height:36px;border-radius:50%;display:none;place-items:center;background:rgba(255,255,255,.12);font-size:20px;flex:none}
 header.top.sub .back{display:grid}
+header.top>div{min-width:0}
+header.top small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header.top .moi{margin-left:auto;flex:none;padding:6px 12px;border-radius:99px;background:rgba(201,164,94,.2);border:1px solid var(--gold-2);color:#fff;font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+header.top .moi b{color:var(--gold-2)}
+.edit{border-color:var(--gold-2)}
+.edit summary{cursor:pointer;font-weight:600;color:var(--gold);list-style:none}
+.edit summary::-webkit-details-marker{display:none}
+.edit label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+.edit input[type=text],.edit input[type=number],.edit select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px}
+.edit .coche{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px}
 main{max-width:760px;margin:0 auto;padding:16px}
 h2{font:600 24px/1.2 var(--display);margin:22px 0 10px}
 h2:first-child{margin-top:4px}
@@ -176,6 +186,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px}
   <button class="back" onclick="retour()" aria-label="Retour">‹</button>
   <img src="icons/logo.png" alt="">
   <div><h1>Sami al Athary</h1><small>Science · Rappels · Bénéfices</small></div>
+  <a class="moi" id="moi" href="#prive" hidden></a>
 </header>
 <main id="app"><p class="empty">Chargement des cours…</p></main>
 <nav class="tabs" id="tabs">
@@ -558,6 +569,7 @@ function vueEpisode(arg){
       ${t ? '<button class="btn line" id="pdf">Imprimer les notes</button>' : ""}
     </div>
   </div>
+  ${estSami() ? carteModifier(e) : ""}
   <h2>Le cours en texte</h2>
   ${t ? `<div class="card notes">${t.html}</div>` : aTexte ? `<div class="card" id="zoneLecture">
       <p class="small muted" style="margin-bottom:10px">Le texte du cours, transcrit automatiquement (sans contrôle de Sami, l'audio fait foi).${sc || appli ? " Touche un passage : l'audio part de ce moment. Pendant l'écoute, le passage en cours se surligne." : " L'audio de ce cours n'est que sur Telegram : le texte se lit seul."}</p>
@@ -612,7 +624,7 @@ function afficher(){
   const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, sources: vueSources, recherche: vueRecherche, prive: vuePrive, ep: () => vueEpisode(arg), nouveau: () => vueNouveau(arg), direct: vueDirect};
   $app.innerHTML = (vues[route] || vueIntrouvable)();
   if(route === "prive"){ brancherRec(); verifierEnregistrementLaisse(); chargerAlertes(); chargerValidations(); }
-  bandeauRec();
+  bandeauRec(); majMoi();
   const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", nouveau: ""}[route] ?? route;
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t === onglet));
   document.getElementById("top").classList.toggle("sub", !["accueil", "themes", "preches", "sources", "recherche"].includes(route));
@@ -733,7 +745,9 @@ function vuePrive(){
   });
   const a = D.annonce;
   return `<h2>Espace privé</h2>
-  <p class="muted" style="margin:-4px 0 14px">Connecté : <b>${esc(s.qui)}</b> · ${(s.droits || []).includes("cours") ? "accès complet" : "annonces uniquement"}.</p>
+  <p class="muted" style="margin:-4px 0 8px">Connecté : <b>${esc(s.qui)}</b> · ${(s.droits || []).includes("cours") ? "accès complet" : "annonces uniquement"}.</p>
+  <p class="small muted" style="margin:0 0 14px">Tu restes connecté sur ce téléphone : utilise l'appli normalement, et reviens ici avec le bouton <b>${esc(s.qui)}</b> en haut à droite.${(s.droits || []).includes("cours") ? " Sur chaque cours, « Modifier ce cours » permet de changer son titre, son livre et son numéro." : ""}</p>
+  <div class="btns" style="margin:0 0 14px"><a class="btn line" href="#accueil">Aller aux cours</a></div>
   ${(s.droits || []).includes("cours") ? carteAlertes() + carteEnregistrement() + carteRelecture() : ""}
   <div class="card">
     <h3>Annonce sur l'accueil</h3>
@@ -1124,7 +1138,8 @@ function vueNouveau(id){
     <h2 style="margin:10px 0 4px">${esc(c.titre || "Cours")}</h2>
     <div class="meta"><span>${dateFr(c.date.slice(0, 10))}</span></div>
     ${c.parties.map((n, i) => `${c.parties.length > 1 ? `<p class="small muted" style="margin-top:10px">Partie ${i + 1}</p>` : ""}<audio controls preload="none" style="width:100%;margin-top:10px" src="${D.api}/cours/partie/${c.id}/${n}"></audio>`).join("")}
-    <p class="small muted" style="margin-top:12px">Il sera rangé dans son livre d'ici une demi-heure.</p></div>`;
+    <p class="small muted" style="margin-top:12px">Il sera rangé dans son livre d'ici une demi-heure.</p></div>
+    ${estSami() ? carteRenommerAttente(c) : ""}`;
 }
 
 /* ---------- Comptage anonyme (GoatCounter) : aucun nom, aucun cookie, aucune adresse IP conservée ---------- */
@@ -1177,22 +1192,127 @@ function aideInstallation(){
   compter("/aide-installation", "Aide à l'installation affichée", true);
 }
 
+
+/* ---------- Index des données (reconstruit après une correction de Sami) ---------- */
+function indexer(){
+  D.serie = new Map(); D.toutes.forEach(s => D.serie.set(s.id, s));
+  D.eps = D.epsTous.filter(e => D.serie.has(e.serie));
+  D.byId = new Map(); D.bySerie = new Map();
+  D.eps.forEach(e => { D.byId.set(e.id, e); if(!D.bySerie.has(e.serie)) D.bySerie.set(e.serie, []); D.bySerie.get(e.serie).push(e); });
+  D.toutes.forEach(s => s.nb = (D.bySerie.get(s.id) || []).length);
+  D.series = D.toutes.filter(s => s.nb > 0);
+}
+const estSami = () => { const s = session.get(); return !!s && (s.droits || []).includes("cours"); };
+function majMoi(){
+  const a = document.getElementById("moi"), s = session.get(); if(!a) return;
+  a.hidden = !s; if(s) a.innerHTML = `<b>●</b> ${esc(s.qui)}`;
+}
+async function appelSami(chemin, corps){
+  const s = session.get(); if(!s) throw new Error("non connecté");
+  const r = await fetch(D.api + chemin, {method: "POST", headers: {"Content-Type": "application/json", "Authorization": "Bearer " + s.jeton}, body: JSON.stringify(corps)});
+  if(r.status === 401){ session.fin(); majMoi(); throw new Error("connexion expirée, retape ton code dans Recherche"); }
+  const j = await r.json(); if(!j.ok) throw new Error(j.erreur || "erreur"); return j;
+}
+
+/* ---------- Corrections de Sami : visibles tout de suite, gravées par le robot dans l'heure ---------- */
+function ajouterLivres(livres){
+  (livres || []).forEach(l => { if(!D.toutes.some(s => s.id === l.id))
+    D.toutes.push({id: l.id, theme: l.theme, nom: l.nom, livre: "", auteur: l.auteur || "", type: l.type || "cours", statut: l.statut || "en cours", nb: 0}); });
+}
+function appliquerCorrection(e, c){
+  const avant = JSON.stringify([e.titre, e.serie, e.num, !!e.fin]);
+  Object.assign(e, {titre: c.titre, serie: c.serie, num: c.num, fin: !!c.fin});
+  return avant !== JSON.stringify([e.titre, e.serie, e.num, !!e.fin]);
+}
+async function chargerCorrections(){
+  if(!D.api) return;
+  try{
+    const j = await (await fetch(D.api + "/corrections", {cache: "no-store"})).json();
+    const nbLivres = D.toutes.length; ajouterLivres(j.livres);
+    let change = D.toutes.length !== nbLivres;
+    Object.entries(j.corrections || {}).forEach(([id, c]) => { const e = D.epsTous.find(x => x.id === +id); if(e && appliquerCorrection(e, c)) change = true; });
+    if(!change) return;
+    indexer();
+    if(!/^#ep-/.test(location.hash)) afficher();
+  }catch(e){}
+}
+let corrOuverte = null, corrMsg = "";
+function carteModifier(e){
+  const ouverte = corrOuverte === e.id, msg = ouverte ? corrMsg : "";
+  corrOuverte = null; corrMsg = "";
+  const options = D.themes.map(t => {
+    const ss = D.toutes.filter(s => s.theme === t.id).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+    return ss.length ? `<optgroup label="${esc(t.nom)}">${ss.map(s => `<option value="${esc(s.id)}" ${s.id === e.serie ? "selected" : ""}>${esc(s.nom)}</option>`).join("")}</optgroup>` : "";
+  }).join("");
+  setTimeout(() => {
+    const sel = document.getElementById("cLivre"), zone = document.getElementById("cNouveau"), m = document.getElementById("cMsg"), b = document.getElementById("cOk");
+    if(!sel) return;
+    sel.onchange = () => zone.hidden = sel.value !== "__nouveau";
+    b.onclick = async () => {
+      const corps = {id: e.id, titre: document.getElementById("cTitre").value.trim(), num: document.getElementById("cNum").value, fin: document.getElementById("cFin").checked, serie: sel.value};
+      if(sel.value === "__nouveau"){
+        const nom = document.getElementById("cNom").value.trim();
+        if(!nom){ m.textContent = "Écris le nom du nouveau livre."; return; }
+        const theme = document.getElementById("cTheme").value;
+        corps.livre = {nom, auteur: document.getElementById("cAuteur").value.trim(), theme, type: theme === "preches" ? "preche" : "cours"};
+      }
+      b.disabled = true; m.textContent = "Enregistrement…";
+      try{
+        const j = await appelSami("/correction", corps);
+        ajouterLivres(j.livres); appliquerCorrection(D.epsTous.find(x => x.id === e.id), j.correction); indexer();
+        corrOuverte = e.id; corrMsg = "C'est fait : le cours est modifié pour tout le monde."; afficher();
+      }catch(err){ b.disabled = false; m.textContent = "Échec : " + err.message + "."; }
+    };
+  });
+  return `<details class="card edit noprint" ${ouverte ? "open" : ""}><summary>✎ Modifier ce cours</summary>
+    <label for="cTitre">Titre du cours (sans le nom du livre)</label>
+    <input type="text" id="cTitre" maxlength="300" value="${esc(e.titre || "")}" placeholder="Exemple : Livre du jeûne">
+    <label for="cLivre">Livre</label>
+    <select id="cLivre">${options}<option value="__nouveau">+ Nouveau livre…</option></select>
+    <div id="cNouveau" hidden>
+      <label for="cNom">Nom du nouveau livre</label><input type="text" id="cNom" maxlength="160" placeholder="Exemple : Explication de Sabil ar-Rachad">
+      <label for="cAuteur">Auteur (facultatif)</label><input type="text" id="cAuteur" maxlength="160">
+      <label for="cTheme">Thème</label><select id="cTheme">${D.themes.map(t => `<option value="${esc(t.id)}">${esc(t.nom)}</option>`).join("")}</select>
+    </div>
+    <label for="cNum">Numéro dans le livre (vide si aucun)</label>
+    <input type="number" id="cNum" min="0" max="9999" inputmode="numeric" value="${e.num ?? ""}">
+    <label class="coche"><input type="checkbox" id="cFin" ${e.fin ? "checked" : ""}> Dernier cours de ce livre</label>
+    <div class="btns"><button class="btn gold" id="cOk">Enregistrer</button></div>
+    <p id="cMsg" class="small" style="margin-top:10px;color:var(--gold)">${esc(msg)}</p>
+  </details>`;
+}
+function carteRenommerAttente(c){
+  setTimeout(() => {
+    const b = document.getElementById("rOk"), m = document.getElementById("rMsg"); if(!b) return;
+    b.onclick = async () => {
+      const titre = document.getElementById("rTitre").value.trim(); if(!titre){ m.textContent = "Écris le titre."; return; }
+      b.disabled = true; m.textContent = "Enregistrement…";
+      try{ await appelSami(`/cours/${c.id}/titre`, {titre}); c.titre = titre; afficher(); setTimeout(() => { const x = document.getElementById("rMsg"); if(x) x.textContent = "Titre changé : le cours sera rangé d'après ce titre."; }); }
+      catch(err){ b.disabled = false; m.textContent = "Échec : " + err.message + "."; }
+    };
+  });
+  return `<div class="card edit"><h3>Renommer avant le rangement</h3>
+    <p class="small muted" style="margin-top:4px">Numéro, puis le livre et son auteur, puis le passage. Ex. : « 58 Lecture et étude du Muwatta de l'imam Malik ibn Anas - Livre du jeûne ».</p>
+    <input type="text" id="rTitre" maxlength="300" value="${esc(c.titre || "")}" style="margin-top:10px">
+    <div class="btns"><button class="btn gold" id="rOk">Renommer</button></div>
+    <p id="rMsg" class="small" style="margin-top:10px;color:var(--gold)"></p></div>`;
+}
+
 /* ---------- chargement ---------- */
 async function charger(nom, defaut){
   try{ const r = await fetch("data/" + nom, {cache: "no-cache"}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return defaut; }
 }
 (async () => {
   const [ser, eps, conf, textes, pdfs, api, valid] = await Promise.all([charger("series.json", {themes: [], series: []}), charger("episodes.json", []), charger("config.json", {}), charger("textes.json", {}), charger("pdfs.json", []), charger("api.json", {}), charger("validations.json", {})]);
-  D.themes = ser.themes; D.series = ser.series; D.eps = eps; D.conf = conf; D.textes = textes || {}; D.pdfs = new Set(pdfs || []); D.api = (api && api.url) || ""; D.valid = valid || {};
-  D.series.forEach(s => D.serie.set(s.id, s));
-  D.eps = D.eps.filter(e => D.serie.has(e.serie));
-  D.eps.forEach(e => { D.byId.set(e.id, e); if(!D.bySerie.has(e.serie)) D.bySerie.set(e.serie, []); D.bySerie.get(e.serie).push(e); });
+  D.themes = ser.themes; D.toutes = ser.series; D.epsTous = eps; D.conf = conf; D.textes = textes || {}; D.pdfs = new Set(pdfs || []); D.api = (api && api.url) || ""; D.valid = valid || {};
+  indexer();
   if(!D.eps.length){ $app.innerHTML = '<div class="empty">Impossible de charger les cours. Vérifie ta connexion.</div>'; return; }
   if(/^#ep-/.test(location.hash)) document.getElementById("porte")?.remove(); else ouvrirPorte();
   afficher();
   setTimeout(aideInstallation, 2500);
   chargerAnnonce();
   chargerAttente();
+  chargerCorrections();
   compter(STANDALONE ? "/ouverture/appli-installee" : "/ouverture/navigateur", STANDALONE ? "Ouverture depuis l'icône" : "Ouverture dans le navigateur");
 })();
 if("serviceWorker" in navigator && location.protocol === "https:" && !/claude|anthropic/.test(location.hostname)){

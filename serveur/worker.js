@@ -140,6 +140,61 @@ async function routesCours(req, env, url) {
     return json(req, { ok: true, validations: v });
   }
 
+  // Corrections de Sami : titre, livre, numéro d'un cours, et livres qu'il ajoute.
+  // Visibles tout de suite dans l'appli, puis gravées dans les données par le robot (toutes les heures).
+  if (p === "/corrections" && req.method === "GET") {
+    return json(req, { corrections: (await env.KV.get("corrections", "json")) || {}, livres: (await env.KV.get("livres", "json")) || [] });
+  }
+  if (p === "/correction" && req.method === "POST") {
+    const qui = await lireJeton(env, req);
+    if (!peut(qui, "cours")) return json(req, { ok: false, erreur: "Accès refusé" }, 401);
+    let a = {}; try { a = await req.json(); } catch (e) {}
+    const id = String(a.id || "");
+    if (!/^\d{1,12}$/.test(id)) return json(req, { ok: false, erreur: "Cours invalide" }, 400);
+    const corr = (await env.KV.get("corrections", "json")) || {};
+    const livres = (await env.KV.get("livres", "json")) || [];
+    let livre = null;
+    if (a.annuler) delete corr[id];
+    else {
+      let serie = String(a.serie || "");
+      if (a.livre && a.livre.nom) { // nouveau livre
+        const nom = String(a.livre.nom).trim().slice(0, 160);
+        const slug = nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "livre";
+        livre = livres.find(l => l.nom.toLowerCase() === nom.toLowerCase());
+        if (!livre) {
+          let idl = "l-" + slug, k = 2; while (livres.some(l => l.id === idl)) idl = `l-${slug}-${k++}`;
+          livre = { id: idl, nom, auteur: String(a.livre.auteur || "").trim().slice(0, 160), theme: /^[a-z]{2,20}$/.test(a.livre.theme || "") ? a.livre.theme : "divers",
+                    type: a.livre.type === "preche" ? "preche" : "cours", statut: "en cours", date: new Date().toISOString().slice(0, 10) };
+          livres.push(livre); await env.KV.put("livres", JSON.stringify(livres));
+        }
+        serie = livre.id;
+      }
+      if (!/^[a-z0-9-]{2,60}$/.test(serie)) return json(req, { ok: false, erreur: "Livre invalide" }, 400);
+      const num = a.num === null || a.num === "" || a.num === undefined ? null : Math.trunc(+a.num);
+      if (num !== null && !(num >= 0 && num < 10000)) return json(req, { ok: false, erreur: "Numéro invalide" }, 400);
+      corr[id] = { titre: String(a.titre || "").trim().slice(0, 300), serie, num, fin: !!a.fin, date: new Date().toISOString(), par: qui };
+    }
+    await env.KV.put("corrections", JSON.stringify(corr));
+    return json(req, { ok: true, correction: corr[id] || null, livre, livres });
+  }
+
+  // Renommer un cours enregistré pas encore rangé (le robot le classera d'après ce nouveau titre)
+  m = /^\/cours\/([a-z0-9-]+)\/titre$/.exec(p);
+  if (m && req.method === "POST") {
+    const qui = await lireJeton(env, req);
+    if (!peut(qui, "cours")) return json(req, { ok: false, erreur: "Accès refusé" }, 401);
+    let a = {}; try { a = await req.json(); } catch (e) {}
+    const titre = String(a.titre || "").trim().slice(0, 300);
+    if (!titre) return json(req, { ok: false, erreur: "Titre vide" }, 400);
+    const l = await env.KV.list({ prefix: `cours:${m[1]}:` });
+    if (!l.keys.length) return json(req, { ok: false, erreur: "Ce cours vient d'être rangé : modifie-le depuis sa page." }, 404);
+    for (const k of l.keys) {
+      const v = await env.KV.getWithMetadata(k.name, "arrayBuffer");
+      if (v.value) await env.KV.put(k.name, v.value, { metadata: { ...(v.metadata || {}), titre } });
+    }
+    return json(req, { ok: true, titre });
+  }
+
   // Alertes pour Sami (ex. copie Telegram ratée) : déposées par le robot, lues et effacées par Sami
   if (p === "/alertes") {
     if (req.method === "POST") {
@@ -177,7 +232,7 @@ export default {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
 
-    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/") || url.pathname.startsWith("/pdf/") || url.pathname.startsWith("/texte/") || url.pathname === "/alertes" || url.pathname.startsWith("/validation")) {
+    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/") || url.pathname.startsWith("/pdf/") || url.pathname.startsWith("/texte/") || url.pathname === "/alertes" || url.pathname.startsWith("/validation") || url.pathname.startsWith("/correction")) {
       const r = await routesCours(req, env, url);
       if (r) return r;
     }

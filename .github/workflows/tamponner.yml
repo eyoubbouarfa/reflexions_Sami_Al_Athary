@@ -1,6 +1,7 @@
-name: Tamponner les PDF validés par Sami
+name: Décisions de Sami (PDF, titres, classement)
 
-# Toutes les heures : applique les décisions de Sami (tampon ajouté ou enlevé, PDF retiré ou remis).
+# Toutes les heures : applique les décisions de Sami (tampon ajouté ou enlevé, PDF retiré ou remis,
+# titre, livre ou numéro d'un cours changé, livre ajouté).
 # À la main, on peut aussi refaire des PDF à partir de leur transcription (« tous » pour tous).
 on:
   schedule:
@@ -31,6 +32,9 @@ jobs:
         id: q
         run: |
           if [ -n "${{ inputs.refaire }}" ]; then python3 outils/tamponner.py --refaire "${{ inputs.refaire }}"; else python3 outils/tamponner.py; fi
+          # Corrections de Sami (titre, livre, numéro) : PDF refait pour les cours modifiés qui en ont un
+          python3 outils/corriger.py || { echo "{}" > /tmp/corrections.json; : > /tmp/corriges.txt; }
+          for i in $(cat /tmp/corriges.txt); do grep -qw "$i" data/pdfs.json && echo -n " $i" >> /tmp/a_refaire.txt; done
           echo "refaire=$(cat /tmp/a_refaire.txt)" >> "$GITHUB_OUTPUT"
           echo "retirer=$(cat /tmp/a_retirer.txt)" >> "$GITHUB_OUTPUT"
       - if: steps.q.outputs.retirer != ''
@@ -58,10 +62,12 @@ jobs:
           for i in 1 2 3 4 5 6; do
             git fetch -q origin main && git reset -q --hard origin/main
             cp /tmp/validations.json data/validations.json
+            python3 outils/corriger.py --fichier /tmp/corrections.json
             python3 outils/liste_pdf.py
-            git add data/validations.json data/pdfs.json
+            git add data/validations.json data/pdfs.json data/episodes.json data/series.json
+            [ -f data/livres_ajoutes.json ] && git add data/livres_ajoutes.json
             git diff --cached --quiet && exit 0
-            git commit -qm "Décisions de Sami sur les PDF"
+            git commit -qm "Décisions de Sami sur les cours"
             git push -q && exit 0
             sleep $((i*7))
           done

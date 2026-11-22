@@ -65,3 +65,21 @@ SERIES = [
     # Divers
     S("CF", "conferences", "divers", "Conférences et rappels", "", "", "conference", motifs=[]),
 ]
+
+# Livres ajoutés par Sami depuis l'appli (gravés par outils/corriger.py dans data/livres_ajoutes.json).
+# Placés en tête : leur nom complet sert de motif, il est plus précis que les motifs génériques.
+def _livres_ajoutes():
+    import json
+    import unicodedata
+    from pathlib import Path
+    f = Path(__file__).resolve().parent.parent / "data" / "livres_ajoutes.json"
+    if not f.exists():
+        return []
+    norm = lambda t: "".join(c for c in unicodedata.normalize("NFD", t) if unicodedata.category(c) != "Mn").lower().replace("’", "'")  # noqa: E731
+    connus = {s["id"] for s in SERIES}
+    return [S("+" + l["id"], l["id"], l.get("theme") or "divers", l["nom"], "", l.get("auteur", ""), l.get("type") or "cours",
+              l.get("statut") or "en cours", motifs=[norm(l["nom"])])
+            for l in json.loads(f.read_text(encoding="utf-8")) if l.get("id") and l.get("nom") and l["id"] not in connus]
+
+
+SERIES[:0] = _livres_ajoutes()
