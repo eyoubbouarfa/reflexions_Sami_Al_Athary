@@ -538,11 +538,21 @@ function afficher(){
   document.getElementById("top").classList.toggle("sub", !["accueil", "themes", "preches", "sources", "recherche"].includes(route));
 }
 let derniereRoute = "";
+let dernierHash = location.hash;
 window.addEventListener("hashchange", () => {
   afficher(); compterVue();
   const r = location.hash.split("-")[0];
   if(r !== derniereRoute || r === "#ep") window.scrollTo(0, 0);
-  derniereRoute = r;
+  // Retour d'un cours vers la liste du livre : on retombe sur le cours où l'on était, mis en évidence
+  if(r === "#serie" && dernierHash.startsWith("#ep-")){
+    const ligne = document.querySelector(`a.row[href="${dernierHash}"]`);
+    if(ligne){
+      ligne.scrollIntoView({block: "center"});
+      ligne.style.transition = "box-shadow .4s"; ligne.style.boxShadow = "0 0 0 2px var(--gold)";
+      setTimeout(() => ligne.style.boxShadow = "", 1800);
+    }
+  }
+  derniereRoute = r; dernierHash = location.hash;
 });
 
 

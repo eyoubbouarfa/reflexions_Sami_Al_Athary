@@ -1,4 +1,4 @@
-const CACHE = "sami-cours-v15";
+const CACHE = "sami-cours-v16";
 const FICHIERS = ["./", "index.html", "manifest.webmanifest", "icons/logo.png", "icons/icon-192.png", "icons/icon-512.png",
   "data/series.json", "data/episodes.json", "data/config.json", "data/textes.json"];
 self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(FICHIERS)).then(() => self.skipWaiting())));
