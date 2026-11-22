@@ -659,7 +659,8 @@ function vuePrive(){
     <h3>Annonce sur l'accueil</h3>
     ${a ? `<div class="annonce" style="margin:10px 0"><p>${esc(a.texte)}</p><p class="small muted">Publiée par ${esc(a.par)}${a.fin ? ` · affichée jusqu'au ${dateFr(a.fin)} inclus` : ""}</p></div>` : `<p class="muted small" style="margin:6px 0 10px">Aucune annonce affichée en ce moment.</p>`}
     <label class="small muted" for="ptexte">Nouvelle annonce</label>
-    <textarea id="ptexte" rows="3" maxlength="500" placeholder="Exemple : Pas de cours ce mardi. Reprise jeudi après Maghrib." style="width:100%;margin:6px 0 10px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px"></textarea>
+    <textarea id="ptexte" rows="3" maxlength="500" placeholder="Exemple : Pas de cours ce mardi. Reprise jeudi après Maghrib." style="width:100%;margin:6px 0 10px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
+    <p class="small muted" style="opacity:.75;margin:-4px 0 10px;line-height:1.45">Numéro du cours, puis le livre et son auteur, puis le passage étudié. Le numéro en premier permet de ranger le cours tout seul dans son livre.<br>Dernier cours d'un livre : « 12 ET FIN … ». Prêche : « 131 Le mérite de … - Sermon du vendredi ».</p></textarea>
     <label class="small muted" for="pfin">Afficher jusqu'au (facultatif)</label>
     <input id="pfin" type="date" style="display:block;width:100%;margin:6px 0 4px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
     <div class="btns"><button class="btn gold" id="publier">Publier</button>${a ? '<button class="btn line" id="retirer">Retirer l\'annonce</button>' : ""}</div>
@@ -832,8 +833,8 @@ function carteEnregistrement(){
   }[e] || "";
   return `<div class="card" id="carteRec">
     <h3>Enregistrer un cours</h3>
-    <label class="small muted" for="rtitre">Titre (comme d'habitude : numéro, livre, passage)</label>
-    <input id="rtitre" value="${esc(REC.titre || "")}" placeholder="58 - Muwatta - Livre de la prière du witr" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
+    <label class="small muted" for="rtitre">Titre du cours, comme sur Telegram</label>
+    <input id="rtitre" value="${esc(REC.titre || "")}" placeholder="58 Lecture et étude du Muwatta de l'imam Malik ibn Anas - Livre du jeûne" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
     ${e !== "repos" ? `<p style="font-size:30px;font-weight:600;margin:4px 0;font-variant-numeric:tabular-nums"><span style="color:${e === "enregistre" ? "#d64545" : "var(--gold)"}">●</span> <span id="rtemps">${d}</span> <span class="small muted">${{enregistre: "enregistrement", pause: "en pause", interrompu: "coupé", envoi: "envoi", echec: "non envoyé", fin: "fin"}[e]}</span></p>` : ""}
     <div class="btns">${boutons}</div>
     ${e === "repos" ? `<label class="btn line" style="margin-top:8px;display:inline-flex">Envoyer un fichier audio<input id="rfich" type="file" accept="audio/*" hidden></label>` : ""}
