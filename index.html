@@ -672,7 +672,7 @@ function vuePrive(){
    L'audio est sauvegardé sur le téléphone toutes les 5 secondes : une coupure (appel, écran verrouillé,
    batterie) ne fait perdre que les dernières secondes. On reprend, ça crée une nouvelle partie,
    et le robot recolle toutes les parties en un seul mp3. */
-const REC = {etat: "repos", rec: null, flux: null, verrou: null, debutPartie: 0, cumul: 0, octets: 0, minuteur: null, info: "", envoi: null};
+const REC = {perdu: 0, dernierMorceau: 0, etat: "repos", rec: null, flux: null, verrou: null, debutPartie: 0, cumul: 0, octets: 0, minuteur: null, info: "", envoi: null};
 const MAX_OCTETS_PARTIE = 18 * 1024 * 1024;
 const bdd = (() => {
   let p;
@@ -692,12 +692,25 @@ const bdd = (() => {
 })();
 const typeAudio = () => ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"].find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || "";
 const hms = ms => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
-const dureeRec = () => REC.cumul + (REC.etat === "enregistre" ? Date.now() - REC.debutPartie : 0);
+const dureeRec = () => Math.max(0, REC.cumul + (REC.etat === "enregistre" ? Date.now() - REC.debutPartie : 0) - REC.perdu);
 
 async function garderEcranAllume(){
   try{ if("wakeLock" in navigator && !REC.verrou) { REC.verrou = await navigator.wakeLock.request("screen"); REC.verrou.addEventListener("release", () => REC.verrou = null); } }catch(e){}
 }
-document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible" && REC.etat === "enregistre") garderEcranAllume(); });
+// Écran verrouillé : certains téléphones suspendent le micro sans prévenir. Au retour, on mesure le trou
+// (aucun morceau de son reçu pendant ce temps), on le retire du chrono et on prévient.
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState !== "visible" || REC.etat !== "enregistre") return;
+  garderEcranAllume();
+  setTimeout(() => {
+    const trou = Date.now() - (REC.dernierMorceau || REC.debutPartie);
+    if(trou > 12000){
+      REC.perdu += trou - 5000;
+      REC.info = `Attention : pendant que l'écran était verrouillé, le téléphone a coupé le micro (environ ${Math.round((trou - 5000) / 1000)} s non enregistrées). L'enregistrement a repris. Ne verrouille pas l'écran : il reste allumé tout seul.`;
+      majRec();
+    }
+  }, 6000);
+});
 
 async function demarrerPartie(c){
   REC.flux = REC.flux && REC.flux.active ? REC.flux : await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: true, autoGainControl: true}});
@@ -708,7 +721,7 @@ async function demarrerPartie(c){
   r.ondataavailable = async ev => {
     if(!ev.data || !ev.data.size) return;
     await bdd.ajouter({n, blob: ev.data});
-    REC.octets += ev.data.size;
+    REC.octets += ev.data.size; REC.dernierMorceau = Date.now();
     if(REC.octets > MAX_OCTETS_PARTIE && REC.etat === "enregistre" && r.state === "recording"){ // partie pleine : on enchaîne sur une nouvelle
       r.onstop = () => demarrerPartie(c).catch(erreurRec); r.stop();
     }
@@ -733,7 +746,7 @@ async function commencerCours(){
   const titre = (document.getElementById("rtitre") || {}).value?.trim() || "";
   if(!titre){ REC.info = "Donne d'abord un titre, comme d'habitude : numéro, livre, passage."; majRec(); return; }
   if(!window.MediaRecorder){ REC.info = "Ce téléphone ne permet pas d'enregistrer depuis l'appli. Mets-le à jour ou utilise « Envoyer un fichier »."; majRec(); return; }
-  await bdd.vider();
+  await bdd.vider(); REC.perdu = 0; REC.dernierMorceau = Date.now();
   const c = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), titre, date: new Date().toISOString(), parties: 0, duree: 0};
   REC.cumul = 0;
   await demarrerPartie(c).catch(erreurRec);
@@ -825,7 +838,7 @@ function carteEnregistrement(){
     <div class="btns">${boutons}</div>
     ${e === "repos" ? `<label class="btn line" style="margin-top:8px;display:inline-flex">Envoyer un fichier audio<input id="rfich" type="file" accept="audio/*" hidden></label>` : ""}
     <p id="rinfo" class="small" style="margin-top:10px;color:var(--gold)">${esc(REC.info)}</p>
-    ${e === "repos" || e === "enregistre" ? `<p class="small muted" style="margin-top:8px">Avant de commencer : active « Ne pas déranger » pour éviter les appels, et laisse l'appli ouverte. L'écran reste allumé tout seul. Si ça coupe quand même, rien n'est perdu.</p>` : ""}
+    ${e === "repos" || e === "enregistre" ? `<p class="small muted" style="margin-top:8px">Avant de commencer : active « Ne pas déranger » pour éviter les appels. Ne verrouille pas l'écran avec le bouton : certains téléphones coupent alors le micro. L'écran reste allumé tout seul ; pose le téléphone écran contre la table si la lumière gêne.</p>` : ""}
   </div>`;
 }
 function majRec(){
