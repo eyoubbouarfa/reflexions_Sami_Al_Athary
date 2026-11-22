@@ -1,0 +1,12 @@
+name: Test audio Telegram
+on: workflow_dispatch
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pip install -q yt-dlp
+      - run: |
+          yt-dlp -v --no-warnings -o "/tmp/t.%(ext)s" "https://t.me/Sami_Athary/1607" 2>&1 | tail -15 || true
+          ls -la /tmp/t.* 2>/dev/null || echo "RIEN"
+          curl -s "https://t.me/Sami_Athary/1607?embed=1&mode=tme" | grep -o 'src="[^"]*\(ogg\|mp3\|m4a\|oga\)[^"]*"' | head -3 || true
+          curl -s "https://t.me/s/Sami_Athary/1607" | grep -o '<audio[^>]*>' | head -3 || true
