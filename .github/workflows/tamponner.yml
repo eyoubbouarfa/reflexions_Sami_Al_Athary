@@ -1,51 +1,68 @@
 name: Tamponner les PDF validés par Sami
 
+# Toutes les heures : applique les décisions de Sami (tampon ajouté ou enlevé, PDF retiré ou remis).
+# À la main, on peut aussi refaire des PDF à partir de leur transcription (« tous » pour tous).
 on:
   schedule:
     - cron: "25 * * * *"
   workflow_dispatch:
+    inputs:
+      refaire:
+        description: "PDF à refaire depuis leur transcription (numéros, ou « tous »)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
 
 concurrency:
-  group: tamponner
+  group: publier-pdf
   cancel-in-progress: false
 
 jobs:
   tamponner:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - name: Validations nouvelles ou retirées
+      - name: Décisions de Sami
         id: q
         run: |
-          python3 outils/tamponner.py
-          echo "ids=$(cat /tmp/a_refaire.txt)" >> "$GITHUB_OUTPUT"
-      - if: steps.q.outputs.ids != ''
+          if [ -n "${{ inputs.refaire }}" ]; then python3 outils/tamponner.py --refaire "${{ inputs.refaire }}"; else python3 outils/tamponner.py; fi
+          echo "refaire=$(cat /tmp/a_refaire.txt)" >> "$GITHUB_OUTPUT"
+          echo "retirer=$(cat /tmp/a_retirer.txt)" >> "$GITHUB_OUTPUT"
+      - if: steps.q.outputs.retirer != ''
+        name: Retirer des PDF
+        run: for i in ${{ steps.q.outputs.retirer }}; do gh release delete-asset cours "$i.pdf" --yes || true; done
+      - if: steps.q.outputs.refaire != ''
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - if: steps.q.outputs.ids != ''
-        name: Refaire les PDF avec le tampon
+      - if: steps.q.outputs.refaire != ''
+        name: Refaire des PDF depuis leur transcription
         run: |
           pip install -q reportlab matplotlib
           mkdir -p data/transcriptions data/ia
-          for i in ${{ steps.q.outputs.ids }}; do
-            gh release download cours -p "$i.json" -D data/transcriptions --clobber
+          for i in ${{ steps.q.outputs.refaire }}; do
+            gh release download cours -p "$i.json" -D data/transcriptions --clobber || { echo "Pas de transcription pour $i"; continue; }
             gh release download cours -p "$i.ia.json" -D /tmp --clobber 2>/dev/null && cp "/tmp/$i.ia.json" "data/ia/$i.json" || true
-            python outils/cours_pdf.py $i
-            gh release upload cours "data/pdf/$i.pdf" --clobber
+            python outils/cours_pdf.py $i && gh release upload cours "data/pdf/$i.pdf" --clobber
           done
-      - name: Publier la liste des validations
+      - name: Publier
         run: |
+          cp data/validations.json /tmp/validations.json
           git config user.name "Eyoub Bouarfa"
           git config user.email "eyoubbouarfa@users.noreply.github.com"
-          git checkout -q -- data/pdfs.json 2>/dev/null || true
-          git add data/validations.json
-          git diff --cached --quiet && exit 0
-          git commit -qm "Cours validés par Sami"
-          for i in 1 2 3 4 5; do git pull --rebase -q && git push -q && exit 0; sleep $((i*5)); done
+          for i in 1 2 3 4 5 6; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            cp /tmp/validations.json data/validations.json
+            python3 outils/liste_pdf.py
+            git add data/validations.json data/pdfs.json
+            git diff --cached --quiet && exit 0
+            git commit -qm "Décisions de Sami sur les PDF"
+            git push -q && exit 0
+            sleep $((i*7))
+          done
           exit 1

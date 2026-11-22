@@ -70,8 +70,7 @@ jobs:
           # La liste est recalculée à partir des fichiers rangés : en cas de conflit, on repart de la dernière version et on recalcule.
           for i in 1 2 3 4 5 6; do
             git fetch -q origin main && git reset -q --hard origin/main
-            gh release view cours --json assets -q '[.assets[].name | select(endswith(".pdf")) | rtrimstr(".pdf") | tonumber]' > /tmp/pdfs.json
-            python3 -c "import json; e={x['id'] for x in json.load(open('data/episodes.json'))}; p=sorted(i for i in json.load(open('/tmp/pdfs.json')) if i in e); json.dump(p, open('data/pdfs.json','w'))"
+            python3 outils/liste_pdf.py
             git add data/pdfs.json
             git diff --cached --quiet && exit 0
             git commit -qm "PDF des cours ${{ inputs.ids }}"

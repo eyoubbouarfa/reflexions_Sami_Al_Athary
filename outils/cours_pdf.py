@@ -165,6 +165,14 @@ S = {
 }
 
 
+APPLI = "https://eyoubbouarfa.github.io/savoir_Sami_Al_Athary/"
+
+
+def lien(ep_id, seconde):
+    """Lien vers l'appli, sur ce cours, à ce moment de l'audio."""
+    return f"{APPLI}#ep-{ep_id}-t-{int(seconde)}"
+
+
 def date_fr(d):
     return "/".join(reversed(d.split("-"))) if d and len(d) == 10 else (d or "")
 
@@ -235,7 +243,8 @@ def construire(ep_id):
     else:
         mention = ("<b>Transcription automatique, sans contrôle de Sami al Athary.</b> Ce document n'a pas été relu par "
                    "l'enseignant et peut contenir des erreurs. Les passages en arabe (versets, hadiths, citations) ne sont "
-                   "volontairement pas retranscrits : pour eux, reportez-vous à l'audio. En cas de doute, l'audio fait foi.")
+                   "volontairement pas retranscrits : pour eux, reportez-vous à l'audio. En cas de doute, l'audio fait foi. "
+                   "Touchez un minutage ▶ pour écouter ce passage dans l'appli.")
         fond = "#FBF3E3"
     m = Table([[Paragraph(mention, S["mention"])]], colWidths=[170 * mm])
     m.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(fond)), ("BOX", (0, 0), (-1, -1), .6, colors.HexColor(OR)),
@@ -290,13 +299,13 @@ def construire(ep_id):
     h += [PageBreak(), Paragraph("Le cours", S["h2"])]
     for i, b in enumerate(blocs, 1):
         cles = ", ".join(m for m, _ in mots_cles(" ".join(s["texte"] for s in b), 3))
-        h.append(Paragraph(f"Partie {i} · {hms(b[0]['debut'])}" + (f" — {cles}" if cles else ""), S["h3"]))
+        h.append(Paragraph(f'<a href="{lien(ep_id, b[0]["debut"])}">Partie {i} · {hms(b[0]["debut"])} ▶</a>' + (f" — {cles}" if cles else ""), S["h3"]))
         para, prec_fin = [], None
         for s in b:
             if s["arabe"]:
                 if para:
                     h.append(Paragraph(" ".join(para), S["corps"])); para = []
-                h.append(Paragraph(f"[Passage en arabe non retranscrit · {hms(s['debut'])} – {hms(s['fin'])}]", S["ar"]))
+                h.append(Paragraph(f'<a href="{lien(ep_id, s["debut"])}">[Passage en arabe non retranscrit · {hms(s["debut"])} – {hms(s["fin"])} · écouter ▶]</a>', S["ar"]))
             else:
                 if para and prec_fin is not None and s["debut"] - prec_fin > 1.5 and len(" ".join(para)) > 350:
                     h.append(Paragraph(" ".join(para), S["corps"])); para = []

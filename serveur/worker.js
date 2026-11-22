@@ -129,8 +129,13 @@ async function routesCours(req, env, url) {
     let a = {}; try { a = await req.json(); } catch (e) {}
     const id = String(a.id || "");
     if (!/^\d{1,12}$/.test(id)) return json(req, { ok: false, erreur: "Cours invalide" }, 400);
+    // statut : "valide" (tampon), "retire" (PDF retiré de l'appli), ou rien (retour à « non relu »)
+    const statut = a.statut || (a.ok === false ? null : "valide");
     const v = (await env.KV.get("validations", "json")) || {};
-    if (a.ok === false) delete v[id]; else v[id] = { date: new Date().toISOString().slice(0, 10), par: qui };
+    if (!statut) delete v[id];
+    else if (statut === "valide") v[id] = { date: new Date().toISOString().slice(0, 10), par: qui };
+    else if (statut === "retire") v[id] = { statut: "retire", date: new Date().toISOString().slice(0, 10), par: qui };
+    else return json(req, { ok: false, erreur: "Statut inconnu" }, 400);
     await env.KV.put("validations", JSON.stringify(v));
     return json(req, { ok: true, validations: v });
   }
@@ -152,15 +157,15 @@ async function routesCours(req, env, url) {
   }
 
   // Écoute d'un cours rangé : relaie le mp3 stocké sur GitHub avec le bon type pour les téléphones
-  m = /^\/(audio|pdf)\/([\w.-]+\.(mp3|pdf))$/.exec(p);
+  m = /^\/(audio|pdf|texte)\/([\w.-]+\.(mp3|pdf|json))$/.exec(p);
   if (m && (req.method === "GET" || req.method === "HEAD")) {
-    const fichier = m[2], estPdf = m[3] === "pdf";
+    const fichier = m[2], estPdf = m[3] === "pdf", estTexte = m[3] === "json";
     const h = new Headers();
     if (req.headers.get("Range")) h.set("Range", req.headers.get("Range"));
     const r = await fetch(`https://github.com/${DEPOT}/releases/download/${ETIQUETTE}/${fichier}`, { headers: h, redirect: "follow", method: req.method });
     const out = new Headers(cors(req));
     for (const k of ["Content-Length", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified"]) if (r.headers.get(k)) out.set(k, r.headers.get(k));
-    out.set("Content-Type", estPdf ? "application/pdf" : "audio/mpeg");
+    out.set("Content-Type", estPdf ? "application/pdf" : estTexte ? "application/json; charset=utf-8" : "audio/mpeg");
     if (estPdf) out.set("Content-Disposition", `inline; filename="${fichier}"`); out.set("Accept-Ranges", "bytes"); out.set("Cache-Control", "public, max-age=86400");
     return new Response(r.body, { status: r.status, headers: out });
   }
@@ -172,7 +177,7 @@ export default {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
 
-    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/") || url.pathname.startsWith("/pdf/") || url.pathname === "/alertes" || url.pathname.startsWith("/validation")) {
+    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/") || url.pathname.startsWith("/pdf/") || url.pathname.startsWith("/texte/") || url.pathname === "/alertes" || url.pathname.startsWith("/validation")) {
       const r = await routesCours(req, env, url);
       if (r) return r;
     }

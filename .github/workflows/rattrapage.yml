@@ -26,7 +26,10 @@ jobs:
           IDS=$(python3 -c "
           import json
           faits = set(json.load(open('data/pdfs.json')))
-          eps = [e for e in json.load(open('data/episodes.json')) if e['id'] not in faits]
+          val = json.load(open('data/validations.json'))
+          faits |= {int(i) for i, v in val.items() if v.get('statut') == 'retire'}
+          # Les audios publiés seulement sur Telegram ne sont pas téléchargeables : on les laisse de côté.
+          eps = [e for e in json.load(open('data/episodes.json')) if e['id'] not in faits and 't.me/' not in e['audio']]
           eps.sort(key=lambda e: (e.get('date') or '', e['id']), reverse=True)
           print(' '.join(str(e['id']) for e in eps[:12]))")
           if [ -z "$IDS" ]; then echo "Tous les cours ont leur PDF."; exit 0; fi

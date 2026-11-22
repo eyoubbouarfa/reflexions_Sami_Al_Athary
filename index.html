@@ -75,6 +75,12 @@ h3{font:600 19px/1.25 var(--display)}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .player{border:0;width:100%;height:166px;border-radius:12px;margin-top:14px;background:var(--gold-soft)}
 .notes{font-size:16px;line-height:1.7}
+.lect p{margin:0;padding:10px 12px;border-radius:12px;cursor:pointer;border-left:3px solid transparent;transition:background .3s}
+.lect p .h{display:block;font-size:12px;color:var(--gold);font-variant-numeric:tabular-nums;margin-bottom:2px}
+.lect p.pa{font-size:14px;color:var(--muted);font-style:italic;direction:ltr;text-align:left;font-family:inherit}
+.lect p.on{background:var(--gold-soft);border-left-color:var(--gold)}
+.lect h4{font:600 19px var(--display);margin:16px 0 4px}
+.lectbar{padding:4px 0 8px}
 .notes h4{font:600 20px var(--display);margin:18px 0 6px}
 .notes p{margin:8px 0}
 .notes .ar{font-size:22px;line-height:1.9;margin:10px 0;padding:10px 14px;background:var(--gold-soft);border-radius:10px;text-align:right}
@@ -464,17 +470,24 @@ function rechercher(brut){
     ${r.ext ? `<span class="small" style="display:block;margin-top:4px">${surligner(r.ext, [q, ...mots])}</span>` : ""}</span>${chev}</a>`, 30);
 }
 
-function vueEpisode(id){
-  const e = D.byId.get(+id); if(!e) return vueIntrouvable();
+function vueEpisode(arg){
+  const id = parseInt(arg, 10), tm = /-t-(\d+)/.exec(arg || ""), depart = tm ? +tm[1] : null;
+  const e = D.byId.get(id); if(!e) return vueIntrouvable();
   const s = D.serie.get(e.serie);
   const freres = [...D.bySerie.get(e.serie)].sort(ordreSerie);
   const i = freres.indexOf(e), prec = freres[i - 1], suiv = freres[i + 1];
   const t = D.textes[e.id];
-  const sc = /^https:\/\/soundcloud\.com\//.test(e.audio);
+  const scUrl = e.sc || (/^https:\/\/soundcloud\.com\//.test(e.audio) ? e.audio : "");
+  const sc = !!scUrl;
   const appli = e.source === "appli";
+  const aTexte = D.pdfs && D.pdfs.has(e.id);
   setTimeout(() => {
+    LECT.prepare(e, appli ? "audio" : sc ? "sc" : "");
+    const bl = document.getElementById("lireEcoute");
+    if(bl) bl.onclick = () => chargerLecture(e, null);
+    if(aTexte && depart != null) chargerLecture(e, depart);
     const b = document.getElementById("ecoute");
-    if(b) b.onclick = () => { basculerEcoute(e.id); afficher(); };
+    if(b) b.onclick = () => { basculerEcoute(e.id); b.textContent = ecoutes.has(e.id) ? "✓ Écouté" : "Marquer comme écouté"; };
     const p = document.getElementById("pdf");
     if(p) p.onclick = () => { try{ window.print() }catch(err){} };
   });
@@ -482,17 +495,20 @@ function vueEpisode(id){
     <a class="tag" href="#serie-${s.id}" style="text-decoration:none">${esc(s.nom)}</a>
     <h2 style="margin:10px 0 4px">${e.num != null && e.titre ? `<span class="muted">n° ${e.num} · </span>` : ""}${esc(titreEp(e))}</h2>
     <div class="meta">${e.date ? `<span>${dateFr(e.date)}</span>` : ""}${s.auteur ? `<span>${esc(s.auteur)}</span>` : ""}${e.fin ? "<span>Dernier épisode de la série</span>" : ""}${s.type === "preche" ? "<span>Prêche du vendredi</span>" : ""}</div>
-    ${appli ? `<audio class="noprint" controls preload="none" style="width:100%;margin-top:12px" src="${esc(e.audio)}"></audio>` : ""}
-    ${sc ? `<iframe class="player noprint" loading="lazy" allow="autoplay" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(e.audio)}&color=%239c7a42&visual=false&show_comments=false&show_teaser=false"></iframe>` : ""}
+    ${appli ? `<audio id="aud" class="noprint" controls preload="none" style="width:100%;margin-top:12px" src="${esc(e.audio)}"></audio>` : ""}
+    ${sc ? `<iframe id="scp" class="player noprint" allow="autoplay" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(scUrl)}&color=%239c7a42&visual=false&show_comments=false&show_teaser=false"></iframe>` : ""}
     <div class="btns">
       ${appli ? "" : `<a class="btn gold" href="${esc(e.audio)}" target="_blank" rel="noopener">${sc ? "Ouvrir dans SoundCloud" : "Écouter"}</a>`}
       <button class="btn line" id="ecoute">${ecoutes.has(e.id) ? "✓ Écouté" : "Marquer comme écouté"}</button>
-      ${D.pdfs && D.pdfs.has(e.id) ? `<a class="btn line" href="${D.api}/pdf/${e.id}.pdf" target="_blank" rel="noopener">Cours en PDF${D.valid && D.valid[e.id] ? " · relu par Sami ✓" : ""}</a>` : ""}
+      ${D.pdfs && D.pdfs.has(e.id) ? `<a class="btn line" href="${D.api}/pdf/${e.id}.pdf" target="_blank" rel="noopener">Cours en PDF${D.valid && D.valid[e.id] && D.valid[e.id].statut !== "retire" ? " · relu par Sami ✓" : ""}</a>` : ""}
       ${t ? '<button class="btn line" id="pdf">Imprimer les notes</button>' : ""}
     </div>
   </div>
-  <h2>Notes du cours</h2>
-  ${t ? `<div class="card notes">${t.html}</div>` : (D.pdfs && D.pdfs.has(e.id) ? "" : `<div class="card empty" style="text-align:left">Pas encore de PDF pour ce cours. Les nouveaux cours ont le leur automatiquement, dans l'heure qui suit leur publication.</div>`)}
+  <h2>Le cours en texte</h2>
+  ${t ? `<div class="card notes">${t.html}</div>` : aTexte ? `<div class="card" id="zoneLecture">
+      <p class="small muted" style="margin-bottom:10px">Le texte du cours, transcrit automatiquement (sans contrôle de Sami, l'audio fait foi).${sc || appli ? " Touche un passage : l'audio part de ce moment. Pendant l'écoute, le passage en cours se surligne." : " L'audio de ce cours n'est que sur Telegram : le texte se lit seul."}</p>
+      <button class="btn gold" id="lireEcoute">${sc || appli ? "Lire en écoutant" : "Afficher le texte"}</button></div>`
+    : `<div class="card empty" style="text-align:left">${/t\.me\//.test(e.audio) ? "L'audio de ce cours n'est publié que sur Telegram : son texte ne peut pas être fabriqué pour l'instant." : "Pas encore de texte pour ce cours. Les cours reçoivent le leur petit à petit, des plus récents aux plus anciens."}</div>`}
   <div class="btns noprint" style="justify-content:space-between">
     ${prec ? `<a class="btn line" data-remplace href="#ep-${prec.id}">‹ ${prec.num != null ? "n° " + prec.num : "Précédent"}</a>` : "<span></span>"}
     ${suiv ? `<a class="btn line" data-remplace href="#ep-${suiv.id}">${suiv.num != null ? "n° " + suiv.num : "Suivant"} ›</a>` : ""}
@@ -523,7 +539,7 @@ function vueIntrouvable(){ return `<div class="empty">Page introuvable. <a href=
 function parent(){
   const h = (location.hash || "#accueil").slice(1), i = h.indexOf("-");
   const route = i < 0 ? h : h.slice(0, i), arg = i < 0 ? "" : h.slice(i + 1);
-  if(route === "ep"){ const e = D.eps.find(x => String(x.id) === arg); return e ? "serie-" + e.serie : "themes"; }
+  if(route === "ep"){ const e = D.byId.get(parseInt(arg, 10)); return e ? "serie-" + e.serie : "themes"; }
   if(route === "serie"){ const s = D.serie.get(arg); return !s ? "themes" : s.type === "preche" ? "preches" : "theme-" + s.theme; }
   if(route === "theme") return "themes";
   return "accueil";
@@ -876,6 +892,82 @@ function bandeauRec(){
   b.textContent = REC.etat === "enregistre" ? "● Enregistrement en cours — revenir" : "Enregistrement en pause — revenir";
 }
 
+/* ---------- Lire en écoutant : le texte suit l'audio, toucher un passage y fait sauter l'audio ---------- */
+const LECT = {
+  type: "", e: null, widget: null, pret: false, enAttente: null, enLecture: false,
+  prepare(e, type){ this.e = e; this.type = type; this.widget = null; this.pret = false; this.enAttente = null; this.enLecture = false; },
+  async sc(){
+    if(this.widget) return this.widget;
+    if(!window.SC) await new Promise((ok, ko) => { const x = document.createElement("script"); x.src = "https://w.soundcloud.com/player/api.js"; x.onload = ok; x.onerror = ko; document.head.appendChild(x); });
+    const f = document.getElementById("scp"); if(!f) return null;
+    const w = SC.Widget(f); this.widget = w;
+    w.bind(SC.Widget.Events.READY, () => { this.pret = true; });
+    w.bind(SC.Widget.Events.PLAY, () => { this.enLecture = true; if(this.enAttente != null){ const t = this.enAttente; this.enAttente = null; w.seekTo(t * 1000); } });
+    w.bind(SC.Widget.Events.PAUSE, () => { this.enLecture = false; });
+    w.bind(SC.Widget.Events.PLAY_PROGRESS, ev => suivreLecture(ev.currentPosition / 1000));
+    return w;
+  },
+  async aller(t){
+    if(this.type === "audio"){
+      const a = document.getElementById("aud"); if(!a) return;
+      if(!a.dataset.suivi){ a.dataset.suivi = 1; a.addEventListener("timeupdate", () => suivreLecture(a.currentTime)); }
+      if(a.readyState < 1){ a.preload = "auto"; a.load(); await new Promise(ok => { a.addEventListener("loadedmetadata", ok, {once: true}); setTimeout(ok, 8000); }); }
+      try{ a.currentTime = t; }catch(err){}
+      try{ await a.play(); }catch(err){}
+      if(Math.abs(a.currentTime - t) > 2){ try{ a.currentTime = t; }catch(err){} }
+    } else if(this.type === "sc"){
+      const w = await this.sc().catch(() => null); if(!w) return;
+      if(this.enLecture) w.seekTo(t * 1000); else { this.enAttente = t; w.play(); setTimeout(() => { if(this.enAttente != null){ w.seekTo(t * 1000); } }, 1500); }
+    }
+    document.getElementById(this.type === "audio" ? "aud" : "scp")?.scrollIntoView({block: "nearest"});
+  }
+};
+const mmss = s => { s = Math.floor(s); return s >= 3600 ? `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+let derniereMain = 0;
+addEventListener("touchmove", () => derniereMain = Date.now(), {passive: true});
+addEventListener("wheel", () => derniereMain = Date.now(), {passive: true});
+function suivreLecture(t){
+  const ps = document.querySelectorAll(".lect p[data-t]"); if(!ps.length) return;
+  let cur = null; for(const p of ps){ if(+p.dataset.t <= t + .3) cur = p; else break; }
+  if(!cur || cur.classList.contains("on")) return;
+  document.querySelectorAll(".lect p.on").forEach(p => p.classList.remove("on"));
+  cur.classList.add("on");
+  if(Date.now() - derniereMain > 4000){ const r = cur.getBoundingClientRect(); if(r.top < 140 || r.bottom > innerHeight - 90) cur.scrollIntoView({block: "center", behavior: "smooth"}); }
+}
+function paragraphes(segs){
+  const out = []; let cur = null;
+  for(const s of segs){
+    if(s.arabe){ cur = null; out.push({t: s.debut, fin: s.fin, ar: true}); continue; }
+    if(!cur || (s.debut - cur.fin > 1.5 && cur.txt.length > 350) || cur.txt.length > 900){ cur = {t: s.debut, fin: s.fin, txt: ""}; out.push(cur); }
+    cur.txt += (cur.txt ? " " : "") + s.texte; cur.fin = s.fin;
+  }
+  return out;
+}
+async function chargerLecture(e, depart){
+  const z = document.getElementById("zoneLecture"); if(!z) return;
+  z.innerHTML = `<p class="small muted">Chargement du texte…</p>`;
+  let tr;
+  try{ const r = await fetch(`${D.api}/texte/${e.id}.json`); if(!r.ok) throw new Error(r.status); tr = await r.json(); }
+  catch(err){ z.innerHTML = `<p class="small muted">Le texte n'a pas pu être chargé. Vérifie la connexion, ou ouvre le PDF.</p>`; return; }
+  const jouable = !!LECT.type, ps = paragraphes(tr.segments || []);
+  let partie = -1;
+  z.classList.add("lect");
+  z.innerHTML = `<div class="lectbar small muted">${jouable ? "Touche un passage pour l'écouter." : "Audio uniquement sur Telegram."}${depart != null && jouable ? ` <button class="btn gold" id="lectDepart" style="padding:6px 12px;margin-left:6px">▶ Écouter à partir de ${mmss(depart)}</button>` : ""}</div>` +
+    ps.map(p => {
+      const n = Math.floor(p.t / 360); let h = "";
+      if(n !== partie){ partie = n; h = `<h4>Partie ${n + 1} · ${mmss(n * 360)}</h4>`; }
+      return h + (p.ar ? `<p class="pa" data-t="${p.t}"><span class="h">${mmss(p.t)}${jouable ? " ▶" : ""}</span>Passage en arabe (verset, hadith ou lecture) : écoute-le à ce moment.</p>`
+                       : `<p data-t="${p.t}"><span class="h">${mmss(p.t)}${jouable ? " ▶" : ""}</span>${esc(p.txt)}</p>`);
+    }).join("");
+  if(jouable){
+    z.querySelectorAll("p[data-t]").forEach(p => p.onclick = () => { LECT.aller(+p.dataset.t); suivreLecture(+p.dataset.t); });
+    if(LECT.type === "sc") LECT.sc().catch(() => {});
+    const d = document.getElementById("lectDepart");
+    if(d) d.onclick = () => { LECT.aller(depart); suivreLecture(depart); d.remove(); };
+  }
+  if(depart != null){ setTimeout(() => { suivreLecture(depart); document.querySelector(".lect p.on")?.scrollIntoView({block: "center"}); }, 50); }
+}
+
 /* ---------- Relecture et validation des PDF par Sami (du plus récent au plus ancien) ---------- */
 const RELU = {filtre: "a-relire", nb: 15, serveur: null};
 async function chargerValidations(){
@@ -885,29 +977,34 @@ async function chargerValidations(){
     RELU.serveur = j.validations || {}; majRelecture();
   }catch(e){}
 }
-const estValide = id => !!(RELU.serveur ? RELU.serveur[id] : (D.valid || {})[id]);
+const decision = id => (RELU.serveur || D.valid || {})[id] || null;
+const estValide = id => { const d = decision(id); return !!d && d.statut !== "retire"; };
+const estRetire = id => { const d = decision(id); return !!d && d.statut === "retire"; };
 function carteRelecture(){
   setTimeout(brancherRelecture);
-  const tous = D.eps.filter(e => D.pdfs && D.pdfs.has(e.id)).sort((a, b) => (b.date || "").localeCompare(a.date || "") || b.id - a.id);
-  const liste = tous.filter(e => RELU.filtre === "valides" ? estValide(e.id) : !estValide(e.id));
-  const nbV = tous.filter(e => estValide(e.id)).length;
+  const ordre = (a, b) => (b.date || "").localeCompare(a.date || "") || b.id - a.id;
+  const avecPdf = D.eps.filter(e => (D.pdfs && D.pdfs.has(e.id)) || estRetire(e.id)).sort(ordre);
+  const groupes = {"a-relire": avecPdf.filter(e => !estValide(e.id) && !estRetire(e.id)), "valides": avecPdf.filter(e => estValide(e.id)), "retires": avecPdf.filter(e => estRetire(e.id))};
+  const liste = groupes[RELU.filtre] || [];
+  const local = D.valid || {};
   const ligne = e => {
-    const v = estValide(e.id), enAttente = v && !(D.valid || {})[e.id];
-    return `<div class="row" style="align-items:center;gap:10px">
-      <span class="txt"><span class="t1">${esc(titreEp(e))}</span>
+    const v = estValide(e.id), r = estRetire(e.id), d = decision(e.id) || {}, l = local[e.id] || {};
+    const pret = JSON.stringify(d) === JSON.stringify(l);
+    const etat = v ? (pret ? "tamponné ✓" : "validé, tampon dans l'heure") : r ? (pret ? "retiré de l'appli" : "retiré dans l'heure") : "";
+    const bouton = (statut, txt, cls) => `<button class="btn ${cls}" style="padding:8px 12px" data-decision="${e.id}" data-statut="${statut}">${txt}</button>`;
+    return `<div class="row" style="flex-wrap:wrap;align-items:center;gap:8px">
+      <span class="txt" style="flex:1 1 100%"><span class="t1">${esc(titreEp(e))}</span>
       <span class="t2" style="display:block">${esc(D.serie.get(e.serie).nom)}</span>
-      <span class="small muted" style="display:block">${dateFr(e.date)}${v ? ` · <b style="color:var(--gold)">${enAttente ? "validé, tampon dans l'heure" : "tamponné ✓"}</b>` : ""}</span></span>
-      <a class="btn line" style="padding:8px 12px" href="${D.api}/pdf/${e.id}.pdf" target="_blank" rel="noopener">Lire</a>
-      <button class="btn ${v ? "line" : "gold"}" style="padding:8px 12px" data-valider="${e.id}" data-ok="${v ? 0 : 1}">${v ? "Annuler" : "Valider"}</button>
+      <span class="small muted" style="display:block">${dateFr(e.date)}${etat ? ` · <b style="color:var(--gold)">${etat}</b>` : ""}</span></span>
+      ${r ? "" : `<a class="btn line" style="padding:8px 12px" href="${D.api}/pdf/${e.id}.pdf" target="_blank" rel="noopener">Lire</a>`}
+      ${v || r ? bouton("", r ? "Remettre" : "Annuler la validation", "line") : bouton("valide", "Valider", "gold") + bouton("retire", "Retirer", "line")}
     </div>`;
   };
+  const onglet = (cle, txt) => `<button class="btn ${RELU.filtre === cle ? "gold" : "line"}" data-filtre="${cle}">${txt} (${groupes[cle].length})</button>`;
   return `<div class="card" id="carteRelecture">
     <h3>Relecture des PDF</h3>
-    <p class="small muted" style="margin:6px 0 10px">Lis le PDF ; s'il est fidèle, valide-le. Il reçoit alors ton tampon et la mention « relu par Sami » dans l'appli, dans l'heure.</p>
-    <div class="btns" style="margin-bottom:8px">
-      <button class="btn ${RELU.filtre === "a-relire" ? "gold" : "line"}" data-filtre="a-relire">À relire (${tous.length - nbV})</button>
-      <button class="btn ${RELU.filtre === "valides" ? "gold" : "line"}" data-filtre="valides">Validés (${nbV})</button>
-    </div>
+    <p class="small muted" style="margin:6px 0 10px">Lis le PDF. S'il est fidèle, valide-le : il reçoit ton tampon et la mention « relu par Sami » dans l'heure. S'il est trop mauvais, retire-le : il disparaît de l'appli (rien n'est effacé, tu peux le remettre).</p>
+    <div class="btns" style="margin-bottom:8px">${onglet("a-relire", "À relire")}${onglet("valides", "Validés")}${onglet("retires", "Retirés")}</div>
     <div class="list">${liste.slice(0, RELU.nb).map(ligne).join("") || `<p class="small muted">Rien ici pour l'instant.</p>`}</div>
     ${liste.length > RELU.nb ? `<div class="btns"><button class="btn line" id="reluPlus">Voir les suivants</button></div>` : ""}
     <p id="reluMsg" class="small" style="margin-top:8px;color:var(--gold)"></p>
@@ -918,10 +1015,10 @@ function brancherRelecture(){
   const c = document.getElementById("carteRelecture"); if(!c || c.dataset.ok) return; c.dataset.ok = 1;
   c.querySelectorAll("[data-filtre]").forEach(b => b.onclick = () => { RELU.filtre = b.dataset.filtre; RELU.nb = 15; majRelecture(); });
   const plus = document.getElementById("reluPlus"); if(plus) plus.onclick = () => { RELU.nb += 15; majRelecture(); };
-  c.querySelectorAll("[data-valider]").forEach(b => b.onclick = async () => {
+  c.querySelectorAll("[data-decision]").forEach(b => b.onclick = async () => {
     const s = session.get(); b.disabled = true;
     try{
-      const r = await fetch(D.api + "/validation", {method: "POST", headers: {"Content-Type": "application/json", "Authorization": "Bearer " + s.jeton}, body: JSON.stringify({id: +b.dataset.valider, ok: b.dataset.ok === "1"})});
+      const r = await fetch(D.api + "/validation", {method: "POST", headers: {"Content-Type": "application/json", "Authorization": "Bearer " + s.jeton}, body: JSON.stringify({id: +b.dataset.decision, statut: b.dataset.statut || null, ok: !!b.dataset.statut})});
       const j = await r.json(); if(!j.ok) throw new Error(j.erreur || r.status);
       RELU.serveur = j.validations; majRelecture();
     }catch(e){ b.disabled = false; const m = document.getElementById("reluMsg"); if(m) m.textContent = "Échec : " + e.message + ". Vérifie la connexion."; }

@@ -26,6 +26,8 @@ jobs:
       - run: pip install yt-dlp
       - name: Lire Telegram et SoundCloud
         run: python outils/synchro.py ${{ inputs.tout && '--tout' || '' }}
+      - name: Adresses complètes SoundCloud (lecteur intégré)
+        run: python outils/resoudre_sc.py || true
       - name: Publier les nouveautés
         run: |
           git config user.name "Eyoub Bouarfa"

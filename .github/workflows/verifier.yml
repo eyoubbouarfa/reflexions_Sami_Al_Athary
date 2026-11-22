@@ -1,0 +1,30 @@
+name: Vérifier que tout répond
+
+# Contrôle sans rien modifier : site, serveur, annonces, validations, PDF, texte, audios.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "50 5 * * *"
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          API=$(jq -r .url data/api.json)
+          SITE="https://eyoubbouarfa.github.io/savoir_Sami_Al_Athary/"
+          ID=$(jq '.[-1]' data/pdfs.json)
+          ok=0; ko=0
+          t(){ code=$(curl -s -o /tmp/r -w "%{http_code}" "${@:2}"); if [ "$code" = "200" ] || [ "$code" = "206" ]; then echo "OK   $1 ($code)"; ok=$((ok+1)); else echo "ÉCHEC $1 ($code)"; ko=$((ko+1)); fi; }
+          t "Site" "$SITE"
+          t "Données des cours" "${SITE}data/episodes.json"
+          t "Serveur" "$API/"
+          t "Annonce" "$API/annonce"
+          t "Validations" "$API/validations"
+          t "Cours en attente" "$API/cours/attente"
+          t "PDF du cours $ID" -r 0-100 "$API/pdf/$ID.pdf"
+          t "Texte du cours $ID" "$API/texte/$ID.json"
+          AUD=$(jq -r '[.[] | select(.source=="appli")][0].audio // empty' data/episodes.json)
+          [ -n "$AUD" ] && t "Audio enregistré dans l'appli" -r 0-100 "$AUD"
+          echo "$ok OK, $ko échec(s)"; [ "$ko" = 0 ]
