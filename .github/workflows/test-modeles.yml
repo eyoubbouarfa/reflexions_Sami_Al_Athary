@@ -1,0 +1,14 @@
+name: Tester GitHub Models
+on: workflow_dispatch
+permissions:
+  models: read
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for m in openai/gpt-4.1-mini openai/gpt-4o-mini; do
+            echo "== $m"
+            curl -sS -i -m 60 https://models.github.ai/inference/chat/completions -H "Authorization: Bearer ${{ github.token }}" -H "Content-Type: application/json" -d "{\"model\":\"$m\",\"messages\":[{\"role\":\"user\",\"content\":\"Dis bonjour\"}]}" | head -c 700; echo
+          done
+          curl -sS -m 30 https://models.github.ai/catalog/models -H "Authorization: Bearer ${{ github.token }}" | head -c 400; echo
