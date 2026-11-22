@@ -1,0 +1,51 @@
+name: Tamponner les PDF validés par Sami
+
+on:
+  schedule:
+    - cron: "25 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tamponner
+  cancel-in-progress: false
+
+jobs:
+  tamponner:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validations nouvelles ou retirées
+        id: q
+        run: |
+          python3 outils/tamponner.py
+          echo "ids=$(cat /tmp/a_refaire.txt)" >> "$GITHUB_OUTPUT"
+      - if: steps.q.outputs.ids != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - if: steps.q.outputs.ids != ''
+        name: Refaire les PDF avec le tampon
+        run: |
+          pip install -q reportlab matplotlib
+          mkdir -p data/transcriptions data/ia
+          for i in ${{ steps.q.outputs.ids }}; do
+            gh release download cours -p "$i.json" -D data/transcriptions --clobber
+            gh release download cours -p "$i.ia.json" -D /tmp --clobber 2>/dev/null && cp "/tmp/$i.ia.json" "data/ia/$i.json" || true
+            python outils/cours_pdf.py $i
+            gh release upload cours "data/pdf/$i.pdf" --clobber
+          done
+      - name: Publier la liste des validations
+        run: |
+          git config user.name "Eyoub Bouarfa"
+          git config user.email "eyoubbouarfa@users.noreply.github.com"
+          git checkout -q -- data/pdfs.json 2>/dev/null || true
+          git add data/validations.json
+          git diff --cached --quiet && exit 0
+          git commit -qm "Cours validés par Sami"
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push -q && exit 0; sleep $((i*5)); done
+          exit 1

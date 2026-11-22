@@ -121,6 +121,20 @@ async function routesCours(req, env, url) {
     return json(req, { ok: true, supprimees: l.keys.length });
   }
 
+  // Validation des PDF par Sami : liste publique, modification réservée à Sami
+  if (p === "/validations" && req.method === "GET") return json(req, { validations: (await env.KV.get("validations", "json")) || {} });
+  if (p === "/validation" && req.method === "POST") {
+    const qui = await lireJeton(env, req);
+    if (!peut(qui, "cours")) return json(req, { ok: false, erreur: "Accès refusé" }, 401);
+    let a = {}; try { a = await req.json(); } catch (e) {}
+    const id = String(a.id || "");
+    if (!/^\d{1,12}$/.test(id)) return json(req, { ok: false, erreur: "Cours invalide" }, 400);
+    const v = (await env.KV.get("validations", "json")) || {};
+    if (a.ok === false) delete v[id]; else v[id] = { date: new Date().toISOString().slice(0, 10), par: qui };
+    await env.KV.put("validations", JSON.stringify(v));
+    return json(req, { ok: true, validations: v });
+  }
+
   // Alertes pour Sami (ex. copie Telegram ratée) : déposées par le robot, lues et effacées par Sami
   if (p === "/alertes") {
     if (req.method === "POST") {
@@ -158,7 +172,7 @@ export default {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
 
-    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/") || url.pathname.startsWith("/pdf/") || url.pathname === "/alertes") {
+    if (url.pathname.startsWith("/cours") || url.pathname.startsWith("/audio/") || url.pathname.startsWith("/pdf/") || url.pathname === "/alertes" || url.pathname.startsWith("/validation")) {
       const r = await routesCours(req, env, url);
       if (r) return r;
     }

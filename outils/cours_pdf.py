@@ -165,15 +165,26 @@ S = {
 }
 
 
+def date_fr(d):
+    return "/".join(reversed(d.split("-"))) if d and len(d) == 10 else (d or "")
+
+
 def tampon(c, x, y, val):
-    """Tampon circulaire « Validé par Sami al Athary »."""
+    """Tampon au logo de Sami al Athary : « Relu et validé », avec la date."""
     c.saveState()
-    c.setStrokeColor(colors.HexColor(OR)); c.setFillColor(colors.HexColor(OR))
-    c.setLineWidth(1.6); c.circle(x, y, 17 * mm)
-    c.setLineWidth(.6); c.circle(x, y, 14.8 * mm)
-    c.setFont("Sans-B", 8); c.drawCentredString(x, y + 4 * mm, "VALIDÉ PAR")
-    c.setFont("Serif-B", 9.5); c.drawCentredString(x, y - .5 * mm, "Sami al Athary")
-    c.setFont("Sans", 7); c.drawCentredString(x, y - 5 * mm, val.get("date", ""))
+    r = 12.5 * mm
+    c.setFillColor(colors.white); c.circle(x, y, r + 1.5 * mm, fill=1, stroke=0)
+    logo = RACINE / "icons" / "logo.png"
+    if logo.exists():
+        p = c.beginPath(); p.circle(x, y, r - 2.2 * mm); c.clipPath(p, stroke=0, fill=0)
+        c.drawImage(str(logo), x - (r - 2.2 * mm), y - (r - 2.2 * mm), 2 * (r - 2.2 * mm), 2 * (r - 2.2 * mm), mask="auto")
+        c.restoreState(); c.saveState()
+    c.setStrokeColor(colors.HexColor(OR)); c.setLineWidth(1.8); c.circle(x, y, r)
+    c.setLineWidth(.6); c.circle(x, y, r + 1.4 * mm)
+    c.setFillColor(colors.HexColor(OR)); c.roundRect(x - 17 * mm, y - r - 8.5 * mm, 34 * mm, 7.2 * mm, 3.6 * mm, fill=1, stroke=0)
+    c.setFillColor(colors.white); c.setFont("Sans-B", 7)
+    c.drawCentredString(x, y - r - 5.3 * mm, "RELU ET VALIDÉ")
+    c.setFont("Sans", 6); c.drawCentredString(x, y - r - 7.6 * mm, date_fr(val.get("date", "")))
     c.restoreState()
 
 
@@ -218,7 +229,8 @@ def construire(ep_id):
     h += [t, Spacer(1, 4 * mm)]
 
     if validation:
-        mention = f"<b>Contenu relu et validé par Sami al Athary</b> le {validation.get('date', '')}."
+        mention = (f"<b>Relu et validé par Sami al Athary</b> le {date_fr(validation.get('date', ''))}. Les passages en arabe ne sont pas "
+                   "retranscrits : pour eux, reportez-vous à l'audio.")
         fond = "#E7F2EA"
     else:
         mention = ("<b>Transcription automatique, sans contrôle de Sami al Athary.</b> Ce document n'a pas été relu par "
@@ -303,7 +315,7 @@ def construire(ep_id):
         pied = "Validé par Sami al Athary" if validation else "Transcription automatique · sans contrôle de Sami al Athary · l'audio fait foi"
         c.drawString(20 * mm, 10 * mm, pied); c.drawRightString(A4[0] - 20 * mm, 10 * mm, f"Page {d.page}")
         if validation and d.page == 1:
-            tampon(c, A4[0] - 36 * mm, A4[1] - 33 * mm, validation)
+            tampon(c, A4[0] - 38 * mm, A4[1] - 34 * mm, validation)
         c.restoreState()
 
     doc.build(h, onFirstPage=decor, onLaterPages=decor)

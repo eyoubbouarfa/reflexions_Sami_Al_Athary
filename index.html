@@ -487,7 +487,7 @@ function vueEpisode(id){
     <div class="btns">
       ${appli ? "" : `<a class="btn gold" href="${esc(e.audio)}" target="_blank" rel="noopener">${sc ? "Ouvrir dans SoundCloud" : "Écouter"}</a>`}
       <button class="btn line" id="ecoute">${ecoutes.has(e.id) ? "✓ Écouté" : "Marquer comme écouté"}</button>
-      ${D.pdfs && D.pdfs.has(e.id) ? `<a class="btn line" href="${D.api}/pdf/${e.id}.pdf" target="_blank" rel="noopener">Cours en PDF</a>` : ""}
+      ${D.pdfs && D.pdfs.has(e.id) ? `<a class="btn line" href="${D.api}/pdf/${e.id}.pdf" target="_blank" rel="noopener">Cours en PDF${D.valid && D.valid[e.id] ? " · relu par Sami ✓" : ""}</a>` : ""}
       ${t ? '<button class="btn line" id="pdf">Imprimer les notes</button>' : ""}
     </div>
   </div>
@@ -541,7 +541,7 @@ function afficher(){
   const [route, ...rest] = h.split("-"); const arg = rest.join("-");
   const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, sources: vueSources, recherche: vueRecherche, prive: vuePrive, ep: () => vueEpisode(arg), nouveau: () => vueNouveau(arg), direct: vueDirect};
   $app.innerHTML = (vues[route] || vueIntrouvable)();
-  if(route === "prive"){ brancherRec(); verifierEnregistrementLaisse(); chargerAlertes(); }
+  if(route === "prive"){ brancherRec(); verifierEnregistrementLaisse(); chargerAlertes(); chargerValidations(); }
   bandeauRec();
   const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", nouveau: ""}[route] ?? route;
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t === onglet));
@@ -664,13 +664,12 @@ function vuePrive(){
   const a = D.annonce;
   return `<h2>Espace privé</h2>
   <p class="muted" style="margin:-4px 0 14px">Connecté : <b>${esc(s.qui)}</b> · ${(s.droits || []).includes("cours") ? "accès complet" : "annonces uniquement"}.</p>
-  ${(s.droits || []).includes("cours") ? carteAlertes() + carteEnregistrement() : ""}
+  ${(s.droits || []).includes("cours") ? carteAlertes() + carteEnregistrement() + carteRelecture() : ""}
   <div class="card">
     <h3>Annonce sur l'accueil</h3>
     ${a ? `<div class="annonce" style="margin:10px 0"><p>${esc(a.texte)}</p><p class="small muted">Publiée par ${esc(a.par)}${a.fin ? ` · affichée jusqu'au ${dateFr(a.fin)} inclus` : ""}</p></div>` : `<p class="muted small" style="margin:6px 0 10px">Aucune annonce affichée en ce moment.</p>`}
     <label class="small muted" for="ptexte">Nouvelle annonce</label>
-    <textarea id="ptexte" rows="3" maxlength="500" placeholder="Exemple : Pas de cours ce mardi. Reprise jeudi après Maghrib." style="width:100%;margin:6px 0 10px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
-    <p class="small muted" style="opacity:.75;margin:-4px 0 10px;line-height:1.45">Numéro du cours, puis le livre et son auteur, puis le passage étudié. Le numéro en premier permet de ranger le cours tout seul dans son livre.<br>Dernier cours d'un livre : « 12 ET FIN … ». Prêche : « 131 Le mérite de … - Sermon du vendredi ».</p></textarea>
+    <textarea id="ptexte" rows="3" maxlength="500" placeholder="Exemple : Pas de cours ce mardi. Reprise jeudi après Maghrib." style="width:100%;margin:6px 0 10px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px"></textarea>
     <label class="small muted" for="pfin">Afficher jusqu'au (facultatif)</label>
     <input id="pfin" type="date" style="display:block;width:100%;margin:6px 0 4px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
     <div class="btns"><button class="btn gold" id="publier">Publier</button>${a ? '<button class="btn line" id="retirer">Retirer l\'annonce</button>' : ""}</div>
@@ -845,6 +844,7 @@ function carteEnregistrement(){
     <h3>Enregistrer un cours</h3>
     <label class="small muted" for="rtitre">Titre du cours, comme sur Telegram</label>
     <input id="rtitre" value="${esc(REC.titre || "")}" placeholder="58 Lecture et étude du Muwatta de l'imam Malik ibn Anas - Livre du jeûne" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px">
+    <p class="small muted" style="opacity:.75;margin:-4px 0 10px;line-height:1.45">Numéro du cours, puis le livre et son auteur, puis le passage étudié. Le numéro en premier permet de ranger le cours tout seul dans son livre.<br>Dernier cours d'un livre : « 12 ET FIN … ». Prêche : « 131 Le mérite de … - Sermon du vendredi ».</p>
     ${e !== "repos" ? `<p style="font-size:30px;font-weight:600;margin:4px 0;font-variant-numeric:tabular-nums"><span style="color:${e === "enregistre" ? "#d64545" : "var(--gold)"}">●</span> <span id="rtemps">${d}</span> <span class="small muted">${{enregistre: "enregistrement", pause: "en pause", interrompu: "coupé", envoi: "envoi", echec: "non envoyé", fin: "fin"}[e]}</span></p>` : ""}
     <div class="btns">${boutons}</div>
     ${e === "repos" ? `<label class="btn line" style="margin-top:8px;display:inline-flex">Envoyer un fichier audio<input id="rfich" type="file" accept="audio/*" hidden></label>` : ""}
@@ -874,6 +874,58 @@ function bandeauRec(){
   if(!voir){ if(b) b.remove(); return; }
   if(!b){ b = document.createElement("a"); b.id = "bandeauRec"; b.href = "#prive"; b.style.cssText = "position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:50;background:#7a1f1f;color:#fff;padding:10px 14px;border-radius:14px;text-decoration:none;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)"; document.body.appendChild(b); }
   b.textContent = REC.etat === "enregistre" ? "● Enregistrement en cours — revenir" : "Enregistrement en pause — revenir";
+}
+
+/* ---------- Relecture et validation des PDF par Sami (du plus récent au plus ancien) ---------- */
+const RELU = {filtre: "a-relire", nb: 15, serveur: null};
+async function chargerValidations(){
+  if(!D.api) return;
+  try{
+    const j = await (await fetch(D.api + "/validations", {cache: "no-store"})).json();
+    RELU.serveur = j.validations || {}; majRelecture();
+  }catch(e){}
+}
+const estValide = id => !!(RELU.serveur ? RELU.serveur[id] : (D.valid || {})[id]);
+function carteRelecture(){
+  setTimeout(brancherRelecture);
+  const tous = D.eps.filter(e => D.pdfs && D.pdfs.has(e.id)).sort((a, b) => (b.date || "").localeCompare(a.date || "") || b.id - a.id);
+  const liste = tous.filter(e => RELU.filtre === "valides" ? estValide(e.id) : !estValide(e.id));
+  const nbV = tous.filter(e => estValide(e.id)).length;
+  const ligne = e => {
+    const v = estValide(e.id), enAttente = v && !(D.valid || {})[e.id];
+    return `<div class="row" style="align-items:center;gap:10px">
+      <span class="txt"><span class="t1">${esc(titreEp(e))}</span>
+      <span class="t2" style="display:block">${esc(D.serie.get(e.serie).nom)}</span>
+      <span class="small muted" style="display:block">${dateFr(e.date)}${v ? ` · <b style="color:var(--gold)">${enAttente ? "validé, tampon dans l'heure" : "tamponné ✓"}</b>` : ""}</span></span>
+      <a class="btn line" style="padding:8px 12px" href="${D.api}/pdf/${e.id}.pdf" target="_blank" rel="noopener">Lire</a>
+      <button class="btn ${v ? "line" : "gold"}" style="padding:8px 12px" data-valider="${e.id}" data-ok="${v ? 0 : 1}">${v ? "Annuler" : "Valider"}</button>
+    </div>`;
+  };
+  return `<div class="card" id="carteRelecture">
+    <h3>Relecture des PDF</h3>
+    <p class="small muted" style="margin:6px 0 10px">Lis le PDF ; s'il est fidèle, valide-le. Il reçoit alors ton tampon et la mention « relu par Sami » dans l'appli, dans l'heure.</p>
+    <div class="btns" style="margin-bottom:8px">
+      <button class="btn ${RELU.filtre === "a-relire" ? "gold" : "line"}" data-filtre="a-relire">À relire (${tous.length - nbV})</button>
+      <button class="btn ${RELU.filtre === "valides" ? "gold" : "line"}" data-filtre="valides">Validés (${nbV})</button>
+    </div>
+    <div class="list">${liste.slice(0, RELU.nb).map(ligne).join("") || `<p class="small muted">Rien ici pour l'instant.</p>`}</div>
+    ${liste.length > RELU.nb ? `<div class="btns"><button class="btn line" id="reluPlus">Voir les suivants</button></div>` : ""}
+    <p id="reluMsg" class="small" style="margin-top:8px;color:var(--gold)"></p>
+  </div>`;
+}
+function majRelecture(){ const el = document.getElementById("carteRelecture"); if(el){ el.outerHTML = carteRelecture(); } }
+function brancherRelecture(){
+  const c = document.getElementById("carteRelecture"); if(!c || c.dataset.ok) return; c.dataset.ok = 1;
+  c.querySelectorAll("[data-filtre]").forEach(b => b.onclick = () => { RELU.filtre = b.dataset.filtre; RELU.nb = 15; majRelecture(); });
+  const plus = document.getElementById("reluPlus"); if(plus) plus.onclick = () => { RELU.nb += 15; majRelecture(); };
+  c.querySelectorAll("[data-valider]").forEach(b => b.onclick = async () => {
+    const s = session.get(); b.disabled = true;
+    try{
+      const r = await fetch(D.api + "/validation", {method: "POST", headers: {"Content-Type": "application/json", "Authorization": "Bearer " + s.jeton}, body: JSON.stringify({id: +b.dataset.valider, ok: b.dataset.ok === "1"})});
+      const j = await r.json(); if(!j.ok) throw new Error(j.erreur || r.status);
+      RELU.serveur = j.validations; majRelecture();
+    }catch(e){ b.disabled = false; const m = document.getElementById("reluMsg"); if(m) m.textContent = "Échec : " + e.message + ". Vérifie la connexion."; }
+  });
 }
 
 /* ---------- Alertes pour Sami (copie Telegram ratée, etc.) ---------- */
@@ -951,8 +1003,8 @@ async function charger(nom, defaut){
   try{ const r = await fetch("data/" + nom, {cache: "no-cache"}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return defaut; }
 }
 (async () => {
-  const [ser, eps, conf, textes, pdfs, api] = await Promise.all([charger("series.json", {themes: [], series: []}), charger("episodes.json", []), charger("config.json", {}), charger("textes.json", {}), charger("pdfs.json", []), charger("api.json", {})]);
-  D.themes = ser.themes; D.series = ser.series; D.eps = eps; D.conf = conf; D.textes = textes || {}; D.pdfs = new Set(pdfs || []); D.api = (api && api.url) || "";
+  const [ser, eps, conf, textes, pdfs, api, valid] = await Promise.all([charger("series.json", {themes: [], series: []}), charger("episodes.json", []), charger("config.json", {}), charger("textes.json", {}), charger("pdfs.json", []), charger("api.json", {}), charger("validations.json", {})]);
+  D.themes = ser.themes; D.series = ser.series; D.eps = eps; D.conf = conf; D.textes = textes || {}; D.pdfs = new Set(pdfs || []); D.api = (api && api.url) || ""; D.valid = valid || {};
   D.series.forEach(s => D.serie.set(s.id, s));
   D.eps = D.eps.filter(e => D.serie.has(e.serie));
   D.eps.forEach(e => { D.byId.set(e.id, e); if(!D.bySerie.has(e.serie)) D.bySerie.set(e.serie, []); D.bySerie.get(e.serie).push(e); });
