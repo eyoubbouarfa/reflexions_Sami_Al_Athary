@@ -44,6 +44,14 @@ def appel(chemin, methode="GET", donnees=None):
         return r.read()
 
 
+APPLI = "https://eyoubbouarfa.github.io/savoir_Sami_Al_Athary/"
+
+
+def legende(titre, ident):
+    """Titre du cours, puis le lien vers l'appli (texte du cours, PDF, lecture au bon moment)."""
+    return f"{titre}\n\nÉcouter et lire le cours dans l'appli : {APPLI}#ep-{ident}" if ident else titre
+
+
 def alerte(texte):
     try:
         appel("/alertes", "POST", {"texte": texte})
@@ -51,14 +59,14 @@ def alerte(texte):
         print("Alerte non envoyée :", e)
 
 
-def copie_telegram(fichier, titre, duree):
+def copie_telegram(fichier, titre, duree, ident=None):
     """Publie le mp3 sur le canal avec le robot Telegram. Renvoie le lien du post, ou None (et alerte Sami)."""
     jeton = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     if not jeton:
         alerte(f"« {titre} » n'a pas été copié sur Telegram : le robot Telegram n'est pas encore réglé. Le cours est bien dans l'appli.")
         return None
     try:
-        r = subprocess.run(["curl", "-sS", "-m", "600", "-F", f"chat_id=@{CANAL}", "-F", f"caption={titre}", "-F", f"title={titre}",
+        r = subprocess.run(["curl", "-sS", "-m", "600", "-F", f"chat_id=@{CANAL}", "-F", f"caption={legende(titre, ident)}", "-F", f"title={titre}",
                             "-F", "performer=Sami al Athary", "-F", f"duration={duree}", "-F", f"audio=@{fichier}",
                             f"https://api.telegram.org/bot{jeton}/sendAudio"], capture_output=True, text=True, timeout=700)
         j = json.loads(r.stdout or "{}")
@@ -108,10 +116,10 @@ def main():
             subprocess.run(["ffmpeg", "-v", "error", "-y", *entrees, "-filter_complex", filtre, "-map", "[a]",
                             "-ac", "1", "-ar", "44100", "-b:a", "48k", str(sortie)], check=True)
             subprocess.run(["gh", "release", "upload", ETIQUETTE, str(sortie), "--clobber"], check=True)
-            post = copie_telegram(sortie, c["titre"] or "Cours", duree_s(sortie))
+            ident = 3_000_000_000 + int(time.time()) - 1_700_000_000 + len(ranges)
+            post = copie_telegram(sortie, c["titre"] or "Cours", duree_s(sortie), ident)
         s = serie_de(c["titre"]) or CF
         num, sous, fin = decouper(c["titre"], s) if s is not CF else (None, c["titre"], False)
-        ident = 3_000_000_000 + int(time.time()) - 1_700_000_000 + len(ranges)
         audio = f"{API}/audio/{nom}"
         eps.insert(0, {"id": ident, "serie": s["id"], "num": num, "titre": sous, "fin": fin, "audio": audio,
                        "post": post or audio, "date": c["date"][:10], "source": "appli"})
