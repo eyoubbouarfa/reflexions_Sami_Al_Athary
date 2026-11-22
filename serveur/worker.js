@@ -46,7 +46,7 @@ async function lireJeton(env, req) {
 // ---------- Enregistrements de Sami ----------
 // Chaque cours enregistré est envoyé en parties (une par reprise d'enregistrement) et gardé ici
 // le temps que le robot GitHub le convertisse en mp3 et le range pour de bon. Il est écoutable tout de suite.
-const DEPOT = "eyoubbouarfa/reflexions_Sami_Al_Athary";
+const DEPOT = "eyoubbouarfa/savoir_Sami_Al_Athary";
 const ETIQUETTE = "enregistrements";
 const MAX_PARTIE = 24 * 1024 * 1024; // limite d'une valeur KV : 25 Mo
 const ID_OK = /^[a-z0-9-]{6,40}$/;
@@ -201,6 +201,6 @@ export default {
       return json(req, { ok: true, annonce: a });
     }
 
-    return json(req, { ok: true, service: "Réflexions · Sami al Athary" });
+    return json(req, { ok: true, service: "Savoir · Sami al Athary" });
   },
 };
