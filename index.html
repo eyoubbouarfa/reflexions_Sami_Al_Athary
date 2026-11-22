@@ -436,7 +436,8 @@ function rechercher(brut){
     <a class="row" href="#ep-${r.e.id}"><span class="num">${r.e.num}</span>
     <span class="txt"><span class="t1">${esc(r.titre)}</span><span class="t2" style="display:block">${esc(r.s.nom)}</span></span>${chev}</a>`, 30);
   }
-  if(q.length < 2) return `<div class="empty">Continue d'écrire : une seule lettre se trouve dans presque tous les titres.<br><span class="small">Exemples : « Omar », « witr », « hypocrites », « Al Kahf », « 57 » pour un numéro de cours.</span></div>`;
+  if(!q.length) return `<div class="empty"><span class="small">Exemples : « Omar », « witr », « hypocrites », « Al Kahf », ou « 57 » pour un numéro de cours.</span></div>`;
+  if(q.length < 2) return "";
   const mots = q.split(/\s+/).filter(Boolean);
   const res = [];
   for(const e of D.eps){
