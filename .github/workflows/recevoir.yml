@@ -61,3 +61,14 @@ jobs:
             gh api -X POST "repos/${{ github.repository }}/actions/workflows/cours-pdf.yml/dispatches" -f ref=main -f "inputs[ids]=$IDS"
             echo "PDF demandés : $IDS"
           fi
+      - name: Rattrapage Telegram des cours enregistrés
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 outils/relancer_telegram.py
+          git config user.name "Eyoub Bouarfa"
+          git config user.email "eyoubbouarfa@users.noreply.github.com"
+          git add data/episodes.json
+          git diff --cached --quiet && exit 0
+          git commit -qm "Cours publiés sur Telegram"
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push -q && exit 0; sleep $((i*5)); done
