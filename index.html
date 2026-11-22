@@ -398,7 +398,7 @@ function vueRecherche(){
   });
   return `<h2>Recherche</h2>
   <div class="search"><span class="muted">⌕</span><input id="q" type="search" placeholder="Un mot, une phrase, un compagnon, une sourate…" autocomplete="off" enterkeyhint="search"></div>
-  <p class="muted small" style="margin:-4px 0 12px">Recherche dans les titres des ${D.eps.length} cours${nbTextes ? ` et dans le contenu des ${nbTextes} cours transcrits` : ". Le contenu des cours sera cherchable au fur et à mesure de leur transcription"}.</p>
+  <p class="muted small" style="margin:-4px 0 12px">Recherche dans les titres des ${D.eps.length} cours${nbTextes ? ` et dans le contenu des ${nbTextes} cours transcrits` : ""}. Un numéro seul affiche ce cours dans chaque livre.</p>
   <div id="res"></div>`;
 }
 function surligner(txt, mots){
@@ -427,7 +427,16 @@ function extrait(texte, q){
 }
 function rechercher(brut){
   const q = norm(brut.trim());
-  if(q.length < 2) return `<div class="empty">Tape au moins deux lettres.<br><span class="small">Exemples : « Omar », « witr », « hypocrites », « Al Kahf », « purification ».</span></div>`;
+  // Un chiffre seul suffit (numéro de cours). Une lettre seule ne suffit pas : elle se trouve dans presque tous les titres.
+  if(/^\d+$/.test(q)){
+    const n = +q, res = D.eps.filter(e => e.num === n).map(e => ({e, s: D.serie.get(e.serie), titre: titreEp(e)}));
+    if(!res.length) return `<div class="empty">Aucun cours n° ${n}.</div>`;
+    res.sort((a, b) => b.e.id - a.e.id);
+    return `<p class="muted small" style="margin-bottom:8px">Cours n° ${n} dans ${res.length} livre${res.length > 1 ? "s" : ""}</p>` + lot(res, r => `
+    <a class="row" href="#ep-${r.e.id}"><span class="num">${r.e.num}</span>
+    <span class="txt"><span class="t1">${esc(r.titre)}</span><span class="t2" style="display:block">${esc(r.s.nom)}</span></span>${chev}</a>`, 30);
+  }
+  if(q.length < 2) return `<div class="empty">Continue d'écrire : une seule lettre se trouve dans presque tous les titres.<br><span class="small">Exemples : « Omar », « witr », « hypocrites », « Al Kahf », « 57 » pour un numéro de cours.</span></div>`;
   const mots = q.split(/\s+/).filter(Boolean);
   const res = [];
   for(const e of D.eps){
