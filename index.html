@@ -337,6 +337,7 @@ function vueAccueil(){
   ${live ? `<a class="hero" href="#direct" style="display:block;text-decoration:none;margin-bottom:14px">
       <span class="tag live">En direct</span><h3>${esc(D.conf.direct.titre || "Cours en direct")}</h3><p>Rejoindre maintenant</p></a>` : ""}
   ${blocDernier(duJour)}
+  ${blocNotif()}
   ${blocAttente(montres)}
   <h2>Derniers cours publiés</h2>
   <div class="list">${recents.map(e => ligneEp(e, true)).join("")}</div>
@@ -347,7 +348,7 @@ function vueAccueil(){
       <div class="btns"><a class="btn gold" href="#ep-${vendredi.id}">Écouter</a><a class="btn line" style="color:#fff;border-color:rgba(255,255,255,.3)" href="#preches">Tous les prêches</a></div>
     </div>` : ""}
   ${vueProgramme()}
-  <footer>${D.eps.length} cours et prêches classés · <a href="${esc(D.conf.telegram)}">Canal Telegram</a>
+  <footer>${D.eps.length} cours et prêches classés · <a href="${esc(D.conf.telegram)}">Canal Telegram</a>${notifActive() ? ` · Notifications activées (<a href="#" id="notifCouper">couper</a>)` : ""}
   <br><span style="font-size:11px">Comptage anonyme des visites : aucun nom, aucun cookie, aucune adresse IP conservée.</span></footer>`;
 }
 
@@ -1356,6 +1357,64 @@ function carteRenommerAttente(c){
     <p id="rMsg" class="small" style="margin-top:10px;color:var(--gold)"></p></div>`;
 }
 
+
+/* ---------- Notifications : nouveaux cours et annonces (envoyées par outils/notifier.py) ---------- */
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const notifPossible = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window && location.protocol === "https:";
+const notifActive = () => { try{ return localStorage.getItem("notif") === "1" && notifPossible() && Notification.permission === "granted"; }catch(e){ return false; } };
+function blocNotif(){
+  try{
+    if(notifActive()) return "";
+    if(Date.now() - (+localStorage.getItem("notifRefus") || 0) < 30 * 864e5) return "";
+  }catch(e){}
+  setTimeout(() => {
+    const on = (id, f) => { const b = document.getElementById(id); if(b) b.onclick = f; };
+    on("notifOui", activerNotif);
+    on("notifInstaller", () => { try{ localStorage.removeItem("aideInstallVue"); }catch(e){} aideInstallation(); });
+    on("notifNon", () => { try{ localStorage.setItem("notifRefus", Date.now()); }catch(e){} afficher(); });
+  });
+  const carte = (texte, bouton) => `<div class="card" style="display:flex;gap:12px;align-items:center;margin-bottom:14px;padding:12px 14px">
+      <span style="font-size:24px">🔔</span>
+      <span style="flex:1;font-size:14px;line-height:1.35">${texte}<span id="notifMsg" class="small" style="display:block;color:var(--gold)"></span></span>
+      <span style="display:flex;flex-direction:column;gap:6px">${bouton}<button class="btn line" id="notifNon" style="padding:6px 10px;font-size:12px">Non merci</button></span></div>`;
+  if(notifPossible()) return Notification.permission === "denied" ? "" : carte("<b>Être prévenu</b> des nouveaux cours et des annonces", `<button class="btn gold" id="notifOui" style="padding:8px 12px">Activer</button>`);
+  if(IOS && !STANDALONE) return carte("<b>Être prévenu</b> des nouveaux cours : sur iPhone, installe d'abord l'appli sur l'écran d'accueil, puis ouvre-la et active les notifications.", `<button class="btn gold" id="notifInstaller" style="padding:8px 12px">Comment ?</button>`);
+  return "";
+}
+const cleOctets = b => { const s = atob(b.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((b.length + 3) % 4)); return Uint8Array.from(s, c => c.charCodeAt(0)); };
+async function abonnerNotif(){
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if(!sub){
+    const {cle} = await (await fetch(D.api + "/notif/cle")).json();
+    sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: cleOctets(cle)});
+  }
+  const r = await fetch(D.api + "/notif/abonner", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({abo: sub.toJSON()})});
+  if(!(await r.json()).ok) throw new Error("serveur");
+  localStorage.setItem("notif", "1"); localStorage.setItem("notifSync", Date.now());
+}
+async function activerNotif(){
+  const m = document.getElementById("notifMsg"), dire = t => { if(m) m.textContent = t; };
+  try{
+    dire("Autorise les notifications…");
+    if(await Notification.requestPermission() !== "granted"){ dire("Notifications refusées. Tu peux les autoriser dans les réglages du téléphone."); return; }
+    dire("Activation…"); await abonnerNotif(); compter("notifications", "Notifications activées", true); afficher();
+  }catch(e){ dire("Activation impossible pour le moment, réessaie plus tard."); }
+}
+async function couperNotif(){
+  try{
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if(sub){ fetch(D.api + "/notif/desabonner", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({endpoint: sub.endpoint})}).catch(() => {}); await sub.unsubscribe(); }
+  }catch(e){}
+  try{ localStorage.setItem("notif", "0"); localStorage.setItem("notifRefus", Date.now()); }catch(e){}
+  afficher();
+}
+// Une fois par semaine, l'abonnement est rappelé au serveur (et refait s'il a expiré)
+function entretenirNotif(){
+  try{ if(notifActive() && Date.now() - (+localStorage.getItem("notifSync") || 0) > 7 * 864e5) abonnerNotif().catch(() => {}); }catch(e){}
+}
+document.addEventListener("click", e => { if(e.target && e.target.id === "notifCouper"){ e.preventDefault(); couperNotif(); } });
+
 /* ---------- chargement ---------- */
 async function charger(nom, defaut){
   try{ const r = await fetch("data/" + nom, {cache: "no-cache"}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return defaut; }
@@ -1371,6 +1430,7 @@ async function charger(nom, defaut){
   chargerAnnonce();
   chargerAttente();
   chargerCorrections();
+  entretenirNotif();
   compter(STANDALONE ? "/ouverture/appli-installee" : "/ouverture/navigateur", STANDALONE ? "Ouverture depuis l'icône" : "Ouverture dans le navigateur");
 })();
 if("serviceWorker" in navigator && location.protocol === "https:" && !/claude|anthropic/.test(location.hostname)){

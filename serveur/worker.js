@@ -28,6 +28,50 @@ const egal = (a, b) => { // comparaison à temps constant
 };
 const cleSignature = env => `${env.CODE_SAMI}|${env.CODE_EYOUB}|reflexions`;
 
+// ---------- Notifications ----------
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/[+/=]/g, c => ({ "+": "-", "/": "_", "=": "" }[c]));
+async function clesVapid(env) { // créées une seule fois, gardées sur le serveur
+  let v = await env.KV.get("vapid", "json");
+  if (v) return v;
+  const k = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  v = { pub: b64u(await crypto.subtle.exportKey("raw", k.publicKey)), d: (await crypto.subtle.exportKey("jwk", k.privateKey)).d };
+  await env.KV.put("vapid", JSON.stringify(v));
+  return v;
+}
+async function cleAbo(endpoint) { return "abo:" + b64u(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint))).slice(0, 32); }
+async function routesNotif(req, env, url) {
+  const p = url.pathname;
+  if (p === "/notif/cle" && req.method === "GET") return json(req, { cle: (await clesVapid(env)).pub });
+  if (p === "/notif/abonner" && req.method === "POST") {
+    let a = {}; try { a = (await req.json()).abo || {}; } catch (e) {}
+    const ok = typeof a.endpoint === "string" && /^https:\/\//.test(a.endpoint) && a.endpoint.length < 800 && a.keys && typeof a.keys.p256dh === "string" && typeof a.keys.auth === "string";
+    if (!ok) return json(req, { ok: false, erreur: "Abonnement invalide" }, 400);
+    const abo = { endpoint: a.endpoint, keys: { p256dh: a.keys.p256dh.slice(0, 120), auth: a.keys.auth.slice(0, 40) } };
+    await env.KV.put(await cleAbo(abo.endpoint), "1", { metadata: abo }); // l'abonnement tient dans les métadonnées : une seule lecture pour tous
+    return json(req, { ok: true });
+  }
+  if (p === "/notif/desabonner" && req.method === "POST") {
+    let a = {}; try { a = await req.json(); } catch (e) {}
+    if (typeof a.endpoint === "string") await env.KV.delete(await cleAbo(a.endpoint));
+    return json(req, { ok: true });
+  }
+  if (p === "/notif/robot") {
+    if (!(await estRobot(env, req))) return json(req, { ok: false }, 401);
+    if (req.method === "GET") {
+      const abonnes = []; let cursor;
+      do { const l = await env.KV.list({ prefix: "abo:", cursor }); l.keys.forEach(k => k.metadata && abonnes.push({ cle: k.name, abo: k.metadata })); cursor = l.list_complete ? null : l.cursor; } while (cursor);
+      return json(req, { vapid: await clesVapid(env), abonnes, deja: (await env.KV.get("notif_deja", "json")) });
+    }
+    if (req.method === "POST") {
+      let a = {}; try { a = await req.json(); } catch (e) {}
+      if (Array.isArray(a.deja)) await env.KV.put("notif_deja", JSON.stringify(a.deja.slice(-400)));
+      for (const k of (a.morts || []).slice(0, 500)) if (/^abo:/.test(k)) await env.KV.delete(k);
+      return json(req, { ok: true });
+    }
+  }
+  return json(req, { ok: false }, 404);
+}
+
 // Droits : Sami a tout, Eyoub seulement les annonces
 const DROITS = { Sami: ["annonce", "cours"], Eyoub: ["annonce"] };
 const peut = (qui, droit) => !!qui && (DROITS[qui] || []).includes(droit);
@@ -236,6 +280,10 @@ export default {
       const r = await routesCours(req, env, url);
       if (r) return r;
     }
+
+    // Notifications (nouveaux cours, annonces). Le serveur garde les abonnements ;
+    // l'envoi est fait par le robot outils/notifier.py (toutes les 10 min).
+    if (url.pathname.startsWith("/notif/")) return routesNotif(req, env, url);
 
     // Annonce publique
     if (url.pathname === "/annonce" && req.method === "GET") {

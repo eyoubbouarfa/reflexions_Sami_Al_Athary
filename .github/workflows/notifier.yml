@@ -1,0 +1,31 @@
+name: Notifications
+
+# Toutes les 10 minutes : envoie aux téléphones abonnés les nouveaux cours et les annonces.
+# Aussi juste après le rangement des enregistrements et la synchronisation Telegram/SoundCloud.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_run:
+    workflows: ["Ranger les cours enregistrés", "Synchronisation des cours"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: notifier
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  notifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CODE_SAMI: ${{ secrets.CODE_SAMI }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: pip install -q pywebpush
+      - run: python3 outils/notifier.py
