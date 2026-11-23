@@ -103,6 +103,15 @@ nav.tabs a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:cen
 nav.tabs a svg{width:23px;height:23px}
 nav.tabs a.on{color:var(--green)}
 @media (prefers-color-scheme:dark){nav.tabs a.on{color:var(--gold)}}
+#bandeau{position:fixed;left:0;right:0;z-index:5;height:30px;overflow:hidden;background:var(--green);border-top:1px solid var(--gold);color:#F1DFAF;font-size:13px;line-height:30px;white-space:nowrap}
+#bandeau .piste{display:inline-block;padding-left:100%;animation:defile var(--duree,40s) linear infinite}
+#bandeau:active .piste,#bandeau.pause .piste{animation-play-state:paused}
+#bandeau a{color:#F1DFAF;text-decoration:none;margin-right:42px}
+#bandeau a b{color:#fff}
+#bandeau .x{position:absolute;right:0;top:0;width:34px;height:30px;border:0;background:linear-gradient(90deg,transparent,var(--green) 35%);color:#F1DFAF;font-size:16px}
+body.avecBandeau{padding-bottom:calc(106px + var(--safe-b))}
+@keyframes defile{to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion:reduce){#bandeau .piste{animation:none;padding-left:12px}}
 nav.tabs a .dot{width:7px;height:7px;border-radius:50%;background:#B3261E;position:absolute;margin-left:14px;display:none}
 nav.tabs a.live .dot{display:block}
 .prog{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);text-decoration:none;font-weight:500}
@@ -625,7 +634,7 @@ function afficher(){
   const vues = {accueil: vueAccueil, themes: vueThemes, theme: () => vueTheme(arg), serie: () => vueSerie(arg), preches: vuePreches, sources: vueSources, recherche: vueRecherche, prive: vuePrive, ep: () => vueEpisode(arg), nouveau: () => vueNouveau(arg), direct: vueDirect};
   $app.innerHTML = (vues[route] || vueIntrouvable)();
   if(route === "prive"){ brancherRec(); verifierEnregistrementLaisse(); chargerAlertes(); chargerValidations(); }
-  bandeauRec(); majMoi();
+  bandeauRec(); majMoi(); bandeauBas();
   const onglet = {theme: "themes", serie: D.serie.get(arg) && D.serie.get(arg).type === "preche" ? "preches" : "themes", ep: "", nouveau: ""}[route] ?? route;
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t === onglet));
   document.getElementById("top").classList.toggle("sub", !["accueil", "themes", "preches", "sources", "recherche"].includes(route));
@@ -1244,8 +1253,8 @@ function aideInstallation(){
     <p class="muted" style="margin:4px 0 6px">Tu peux tout utiliser ici, sans rien installer. Pour la retrouver d'un geste, comme une vraie appli :</p>
     <ol style="margin:0 0 8px 18px;padding:0">${etapes}</ol>
     <div class="btns" style="margin-top:4px"><button class="btn gold" id="aideInstaller" style="${invite ? "" : "display:none"}">Installer</button><button class="btn line" id="aideFermer">Plus tard</button></div>`;
-  document.body.appendChild(d);
-  const fermer = () => { try{ localStorage.setItem("aideInstallVue", Date.now()); }catch(e){} d.remove(); };
+  document.body.appendChild(d); bandeauBas();
+  const fermer = () => { try{ localStorage.setItem("aideInstallVue", Date.now()); }catch(e){} d.remove(); bandeauBas(); };
   document.getElementById("aideFermer").onclick = fermer;
   document.getElementById("aideInstaller").onclick = async () => { if(invite){ invite.prompt(); try{ await invite.userChoice; }catch(e){} invite = null; } fermer(); };
   compter("/aide-installation", "Aide à l'installation affichée", true);
@@ -1414,6 +1423,43 @@ function entretenirNotif(){
   try{ if(notifActive() && Date.now() - (+localStorage.getItem("notifSync") || 0) > 7 * 864e5) abonnerNotif().catch(() => {}); }catch(e){}
 }
 document.addEventListener("click", e => { if(e.target && e.target.id === "notifCouper"){ e.preventDefault(); couperNotif(); } });
+
+
+/* ---------- Bandeau défilant en bas : ce que l'appli permet (les messages déjà faits disparaissent) ---------- */
+function messagesBandeau(){
+  const m = [], dernier = D.eps[0];
+  if(notifPossible() && !notifActive() && Notification.permission !== "denied")
+    m.push({t: "🔔 <b>Active les notifications</b> : sois prévenu de chaque nouveau cours et de chaque annonce", f: activerNotif});
+  else if(IOS && !STANDALONE)
+    m.push({t: "🔔 <b>Notifications sur iPhone</b> : installe d'abord l'appli sur ton écran d'accueil", f: montrerAideInstall});
+  if(!STANDALONE && !IOS) m.push({t: "📲 <b>Ajoute l'appli</b> à ton écran d'accueil pour la retrouver d'un geste", f: montrerAideInstall});
+  if(dernier) m.push({t: "🎧 <b>Lire en écoutant</b> : touche un passage du texte, l'audio part à ce moment", h: "#ep-" + dernier.id});
+  if(dernier) m.push({t: "📄 Chaque cours a son <b>PDF</b> à lire ou garder", h: "#ep-" + dernier.id});
+  m.push({t: "🔎 Tape un <b>numéro</b> dans Recherche pour retrouver un cours dans chaque livre", h: "#recherche"});
+  m.push({t: "✓ Marque les cours <b>écoutés</b> pour suivre où tu en es dans un livre", h: "#themes"});
+  const jour = infoDuJour();
+  m.push({t: `🕌 Cours le mardi, jeudi et dimanche à la ${esc(D.conf.mosquee || "mosquée")}${jour ? " · " + jour.replace(/<[^>]+>/g, "") : ""}`, h: "#accueil"});
+  return m;
+}
+function montrerAideInstall(){ try{ localStorage.removeItem("aideInstallVue"); }catch(e){} aideInstallation(); bandeauBas(); }
+let cleBandeau = "";
+function bandeauBas(){
+  let b = document.getElementById("bandeau");
+  let ferme = false; try{ ferme = Date.now() - (+localStorage.getItem("bandeauFerme") || 0) < 7 * 864e5; }catch(e){}
+  const cache = ferme || !D.eps || document.getElementById("aideInstall") || document.getElementById("bandeauRec");
+  if(cache){ if(b) b.remove(); document.body.classList.remove("avecBandeau"); cleBandeau = ""; return; }
+  const msgs = messagesBandeau(), cle = msgs.map(x => x.t).join("|");
+  if(!b){ b = document.createElement("div"); b.id = "bandeau"; document.body.appendChild(b); }
+  const nav = document.querySelector("nav.tabs"); b.style.bottom = (nav ? nav.offsetHeight : 64) + "px";
+  document.body.classList.add("avecBandeau");
+  if(cle === cleBandeau) return;
+  cleBandeau = cle;
+  b.innerHTML = `<span class="piste">${msgs.map((x, i) => `<a href="${x.h || "#"}" data-i="${i}">${x.t}</a>`).join("")}</span><button class="x" aria-label="Fermer le bandeau">×</button>`;
+  const longueur = msgs.reduce((n, x) => n + x.t.replace(/<[^>]+>/g, "").length, 0);
+  b.style.setProperty("--duree", Math.max(25, Math.round(longueur * 0.16)) + "s"); // vitesse de lecture confortable
+  b.querySelectorAll("a").forEach(a => a.onclick = e => { const x = msgs[+a.dataset.i]; if(x.f){ e.preventDefault(); x.f(); } });
+  b.querySelector(".x").onclick = () => { try{ localStorage.setItem("bandeauFerme", Date.now()); }catch(e){} bandeauBas(); };
+}
 
 /* ---------- chargement ---------- */
 async function charger(nom, defaut){
