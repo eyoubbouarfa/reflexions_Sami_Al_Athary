@@ -16,7 +16,30 @@ import subprocess
 import sys
 import time
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+
+PARIS = ZoneInfo("Europe/Paris")
+
+
+def jour_du_cours(moment):
+    """Jour où le cours a été donné, d'après l'heure de publication (ISO ou horodatage).
+    Sami publie souvent le lendemain matin : une publication avant midi (heure de Paris) compte pour la veille."""
+    if not moment:
+        return ""
+    if isinstance(moment, (int, float)):
+        d = datetime.fromtimestamp(moment, timezone.utc)
+    else:
+        try:
+            d = datetime.fromisoformat(str(moment).replace("Z", "+00:00"))
+        except ValueError:
+            return str(moment)[:10]
+        if d.tzinfo is None:
+            d = d.replace(tzinfo=timezone.utc)
+    d = d.astimezone(PARIS)
+    if d.hour < 12:
+        d -= timedelta(days=1)
+    return d.strftime("%Y-%m-%d")
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -118,7 +141,7 @@ def episode_depuis_post(x):
     if "goo.gl" in url:
         url = f"https://t.me/{CANAL}/{x['id']}"
     return {"id": x["id"], "serie": s["id"], "num": num, "titre": sous, "fin": fin,
-            "audio": url.split("?")[0], "post": f"https://t.me/{CANAL}/{x['id']}", "date": x["date"][:10],
+            "audio": url.split("?")[0], "post": f"https://t.me/{CANAL}/{x['id']}", "date": jour_du_cours(x["date"]),
             "_reconnu": s is not CF, "_titre": titre}
 
 
@@ -196,7 +219,7 @@ def main():
         if num is None or (s["id"], num) in connus:
             continue
         ident = int(p["id"]) if str(p.get("id", "")).isdigit() else abs(hash(url)) % 10**9 + 10**9
-        date = datetime.utcfromtimestamp(p["timestamp"]).strftime("%Y-%m-%d") if p.get("timestamp") else ""
+        date = jour_du_cours(p["timestamp"]) if p.get("timestamp") else ""
         eps[ident] = {"id": ident, "serie": s["id"], "num": num, "titre": sous, "fin": fin,
                       "audio": url, "post": url, "date": date, "source": "soundcloud"}
         connus.add((s["id"], num))
