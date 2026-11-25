@@ -16,15 +16,14 @@ import subprocess
 import sys
 import time
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 PARIS = ZoneInfo("Europe/Paris")
 
 
 def jour_du_cours(moment):
-    """Jour où le cours a été donné, d'après l'heure de publication (ISO ou horodatage).
-    Sami publie souvent le lendemain matin : une publication avant midi (heure de Paris) compte pour la veille."""
+    """Jour de dépôt du cours (heure de Paris), d'après l'heure de publication (ISO ou horodatage)."""
     if not moment:
         return ""
     if isinstance(moment, (int, float)):
@@ -36,10 +35,7 @@ def jour_du_cours(moment):
             return str(moment)[:10]
         if d.tzinfo is None:
             d = d.replace(tzinfo=timezone.utc)
-    d = d.astimezone(PARIS)
-    if d.hour < 12:
-        d -= timedelta(days=1)
-    return d.strftime("%Y-%m-%d")
+    return d.astimezone(PARIS).strftime("%Y-%m-%d")
 from html.parser import HTMLParser
 from pathlib import Path
 
