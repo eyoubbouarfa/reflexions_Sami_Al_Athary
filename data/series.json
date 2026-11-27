@@ -140,7 +140,7 @@
    "auteur": "",
    "type": "cours",
    "statut": "en cours",
-   "nb": 1
+   "nb": 2
   },
   {
    "id": "sira-resumee",
@@ -330,7 +330,7 @@
    "auteur": "",
    "type": "preche",
    "statut": "en cours",
-   "nb": 133
+   "nb": 134
   },
   {
    "id": "reponses-messager",
